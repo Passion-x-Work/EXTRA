@@ -1,0 +1,51 @@
+{
+  "_comment": "난이도 = 데이터. 코드 재배포 없이 밸런싱 조절. 게임 상태 엔진(engine/)만 이 값을 읽는다.",
+  "grade_to_points": {
+    "탁월": 50,
+    "정합": 35,
+    "부분": 15,
+    "불합치": 0,
+    "역효과": -20
+  },
+  "gauge_range": { "min": 0, "max": 100 },
+  "characters": {
+    "sejong": {
+      "difficulty": "tutorial",
+      "gauge_start": 40,
+      "win_threshold": 90,
+      "penalty_multiplier": 1.0,
+      "judge_leniency": "high",
+      "_note": "정합 논거 1~2개로 도달하는 튜토리얼"
+    },
+    "gladiator": {
+      "difficulty": "standard",
+      "gauge_start": 20,
+      "win_threshold": 100,
+      "penalty_multiplier": 1.5,
+      "judge_leniency": "medium",
+      "_note": "축을 맞춰야 하고 역효과가 아픔 (보류 중)"
+    },
+    "hokusai": {
+      "difficulty": "hard",
+      "gauge_start": 10,
+      "win_threshold": 100,
+      "penalty_multiplier": 2.0,
+      "judge_leniency": "low",
+      "_note": "탁월 반복 또는 여러 축 정교히 축적해야 도달"
+    }
+  },
+  "fail_conditions": {
+    "consecutive_변사_lose": 3
+  },
+  "hint_unlock": {
+    "trigger_fail_count": 3,
+    "order": { "sejong": ["S-02", "S-04", "S-03"] }
+  },
+  "result_grade_bands": {
+    "_desc": "걸린 턴 수 기준 결과 등급(남은 게이지·사료 강도로 보정 가능)",
+    "S": { "max_turns": 2 },
+    "A": { "max_turns": 4 },
+    "B": { "max_turns": 6 },
+    "C": { "max_turns": 99 }
+  }
+}
