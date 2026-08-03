@@ -23,12 +23,22 @@
 - 서버 역할: 사료 검색(RAG) · 인물 프롬프트 · 게임 규칙 판정(신념게이지)
 - 인물 데이터는 JSON으로 분리 → 인물 추가는 폴더 복사만으로 확장
 
+## 사료 관리
+모든 인물 데이터는 검증된 사료에 근거하며, 출처 기준과 갱신 정책을 별도로 관리한다.
+자세한 내용은 [docs/RESEARCH_POLICY.md](docs/RESEARCH_POLICY.md) 참조.
+
 ## 폴더 구조
     EXTRA/
     ├─ client/    # 프론트엔드 (UI, 화면 흐름)
     ├─ server/    # 백엔드 (engine, rag, ai)
     ├─ content/   # 인물별 데이터 (profile, knowledge, debate, scenario)
     └─ docs/      # 프로젝트 문서
+
+## 문서
+- [확장 비전](docs/VISION.md)
+- [폴더·문서 안내](docs/STRUCTURE.md)
+- [사료 정책](docs/RESEARCH_POLICY.md)
+- [세종 사료 원본](docs/research/sejong-sources.md)
 
 ## 팀
 덕업일치 (Passion x Work) · 2인 · NHN AI 해커톤
