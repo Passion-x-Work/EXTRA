@@ -1,0 +1,14 @@
+{
+  "name": "extra",
+  "version": "0.1.0",
+  "description": "EXTRA - 역사에 끼어든 단역이 되어 실존 인물을 설득하는 게임",
+  "type": "module",
+  "scripts": {
+    "test": "node test/smoke.mjs",
+    "dev": "vite web",
+    "build": "vite build web"
+  },
+  "devDependencies": {
+    "vite": "^5.4.0"
+  }
+}

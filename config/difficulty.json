@@ -1,45 +1,24 @@
 {
-  "_comment": "난이도 = 데이터. 코드 재배포 없이 밸런싱 조절. 게임 상태 엔진(engine/)만 이 값을 읽는다.",
-  "grade_to_points": {
-    "탁월": 50,
-    "정합": 35,
-    "부분": 15,
-    "불합치": 0,
-    "역효과": -20
-  },
+  "_comment": "난이도·게이지 상수. 숫자는 여기, 규칙은 engine. 3모드 테스트는 이 값만 바꿔서. (2026-08-03 결정 반영: 인물=세종/반고흐/미야자키, mode 추가)",
+  "grade_to_points": { "탁월": 50, "정합": 35, "부분": 15, "불합치": 0, "역효과": -20 },
   "gauge_range": { "min": 0, "max": 100 },
+  "modes": {
+    "_comment": "회피 논거(최만리 2·4조 등)를 어떤 등급으로 처리할지. avoid=평범한 회피대응, hidden=빈틈을 잘 메웠을 때",
+    "strict": { "avoid_grade": "역효과", "hidden_grade": "정합" },
+    "reward": { "avoid_grade": "부분",   "hidden_grade": "탁월" },
+    "mixed":  { "avoid_grade": "불합치", "hidden_grade": "탁월" }
+  },
   "characters": {
-    "sejong": {
-      "difficulty": "tutorial",
-      "gauge_start": 40,
-      "win_threshold": 90,
-      "penalty_multiplier": 1.0,
-      "judge_leniency": "high",
-      "_note": "정합 논거 1~2개로 도달하는 튜토리얼"
-    },
-    "gladiator": {
-      "difficulty": "standard",
-      "gauge_start": 20,
-      "win_threshold": 100,
-      "penalty_multiplier": 1.5,
-      "judge_leniency": "medium",
-      "_note": "축을 맞춰야 하고 역효과가 아픔 (보류 중)"
-    },
-    "hokusai": {
-      "difficulty": "hard",
-      "gauge_start": 10,
-      "win_threshold": 100,
-      "penalty_multiplier": 2.0,
-      "judge_leniency": "low",
-      "_note": "탁월 반복 또는 여러 축 정교히 축적해야 도달"
-    }
+    "sejong":   { "difficulty": "tutorial", "mode": "mixed", "gauge_start": 40, "win_threshold": 100, "penalty_multiplier": 1.0, "judge_leniency": "high", "status": "full", "_note": "완성형 데모" },
+    "vangogh":  { "difficulty": "standard", "mode": "mixed", "gauge_start": 30, "win_threshold": 100, "penalty_multiplier": 1.2, "judge_leniency": "medium", "status": "preview", "_note": "맛보기(가오픈)" },
+    "miyazaki": { "status": "coming_soon", "_note": "준비중 — 비전/콜라보 슬롯, 실제 개발 X" }
   },
   "fail_conditions": {
-    "consecutive_변사_lose": 3
+    "consecutive_bad_lose": 3
   },
   "hint_unlock": {
     "trigger_fail_count": 3,
-    "order": { "sejong": ["S-02", "S-04", "S-03"] }
+    "order": { "sejong": ["sejong-002", "sejong-004", "sejong-003"] }
   },
   "result_grade_bands": {
     "_desc": "걸린 턴 수 기준 결과 등급(남은 게이지·사료 강도로 보정 가능)",

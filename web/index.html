@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+    <title>EXTRA · 훈민정음</title>
+    <link rel="stylesheet" href="./src/style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <!-- 화면 1: 지도 -->
+      <section id="scr-map" class="screen active">
+        <h1 class="logo">EXTRA</h1>
+        <p class="tagline">역사에 끼어든 <b>단역</b>이 되어, 실존 인물을 설득하라</p>
+        <button class="relic" data-char="sejong">
+          <span class="relic-name">경복궁 · 훈민정음</span>
+          <span class="relic-sub">세종대왕 소환</span>
+        </button>
+        <button class="relic disabled" disabled>🇪🇺 반고흐 · 맛보기 (준비 중)</button>
+        <button class="relic disabled" disabled>🇯🇵 미야자키 · 준비 중</button>
+      </section>
+
+      <!-- 화면 2: 대화 -->
+      <section id="scr-chat" class="screen">
+        <header class="chat-head">
+          <div class="who"><span id="char-name">세종대왕</span><small id="char-diff">튜토리얼</small></div>
+          <div class="gauge"><div id="gauge-fill" class="gauge-fill"></div><span id="gauge-num">40</span></div>
+          <button id="tone-toggle" class="tone" title="말투 전환">정통</button>
+        </header>
+        <div id="log" class="log"></div>
+        <form id="turn-form" class="turn-form">
+          <input id="turn-input" type="text" autocomplete="off" placeholder="세종에게 건넬 논거를 입력…" />
+          <button type="submit">▶</button>
+        </form>
+        <div id="turn-count" class="turn-count">턴 0</div>
+      </section>
+
+      <!-- 화면 3: 결과 카드 -->
+      <section id="scr-result" class="screen">
+        <div class="card">
+          <div id="result-title" class="card-title">세종대왕의 뜻을 굳혔습니다</div>
+          <div id="result-line" class="card-line"></div>
+          <div class="card-meta"><span id="result-turns"></span><span id="result-grade" class="grade"></span></div>
+          <div class="card-cta">당신도 세종대왕의 뜻을 굳힐 수 있는가?</div>
+        </div>
+        <button id="retry" class="retry">다시 도전</button>
+      </section>
+    </div>
+    <script type="module" src="./src/app.js"></script>
+  </body>
+</html>
