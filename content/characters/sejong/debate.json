@@ -1,5 +1,5 @@
 {
-  "_comment": "설득 쟁점 표. avoidanceMode를 strict/reward/mixed로 바꿔 테스트. 쟁점 2,4는 세종이 사료상 회피한 논거로 3모드 반응이 다름.",
+  "_comment": "설득 쟁점 표. avoidanceMode를 strict/reward/mixed로 바꿔 테스트. 쟁점 2,4는 세종이 사료상 직접 반박하지 않고 회피한 논거. 근거 원본은 docs/research/sejong-sources.md의 쟁점표(2조·4조) 참조.",
   "figure": "sejong",
   "scene": "훈민정음 창제 반대 (1444)",
   "avoidanceMode": "mixed",
@@ -8,22 +8,22 @@
   "issues": [
     {
       "id": "issue-1",
-      "opponentClaim": "새 문자는 중국을 섬기는 도리에 어긋난다 (사대의 명분)",
-      "sejongRebuttal": "이두도 우리식 표기이나 오랫동안 써왔다. 새 문자 역시 백성을 위한 실용의 도구다.",
+      "opponentClaim": "사대모화 위반 - 중국을 섬겨 화제(華制)를 따라야 하는데 별도 문자는 옛것에 반한다 (상소 1조)",
+      "sejongRebuttal": "설총의 이두도 우리식 표기다. 이두가 백성을 편하게 하려는 것이라면 언문도 마찬가지다. 게다가 운서를 바로잡을 이가 나 말고 누구냐.",
       "sejongResponded": true,
       "playerEffect": {
         "gaugeGain": 15,
-        "goodMove": "실용성·애민 논리로 접근하면 세종이 크게 수긍한다."
+        "goodMove": "실용성·전문성 논리로 접근하면 세종이 크게 수긍한다."
       },
-      "sourceRef": ["sejong-004", "sejong-005"]
+      "sourceRef": ["sejong-004"]
     },
     {
       "id": "issue-2",
-      "opponentClaim": "중화를 버리고 오랑캐(이적)와 같아지려 하는가",
+      "opponentClaim": "이적(夷狄) 동일시 - 중화를 버리고 오랑캐와 같아지려는 문명의 흠이다 (상소 2조)",
       "sejongRebuttal": null,
       "sejongResponded": false,
       "playerEffect": {
-        "avoidNote": "세종이 사료상 직접 반박하지 않고 회피한 논거.",
+        "avoidNote": "세종이 사대·중화 질서 자체는 부정하지 않고 직접 반박하지 않은 논거. 실용·전문성 쪽으로 공격을 돌림.",
         "strict": {
           "reaction": "세종이 '그 이야기는 다음에 하지' 하며 화제를 돌린다.",
           "gaugeGain": 0
@@ -35,57 +35,57 @@
         "mixed": {
           "defaultReaction": "기본적으로는 회피하나, 플레이어가 뛰어난 답을 하면 숨은 고득점.",
           "gaugeGain": 0,
-          "hiddenTrigger": "플레이어가 근대적 논리로 빈틈을 설득력 있게 메웠을 때",
+          "hiddenTrigger": "플레이어가 사대와 자주(自主)의 논리를 설득력 있게 메웠을 때",
           "hiddenGaugeGain": 25
         }
       },
-      "sourceRef": null
+      "sourceRef": ["sejong-003"]
     },
     {
       "id": "issue-3",
-      "opponentClaim": "학문은 어렵게 갈고닦아야 하는데 쉬운 문자는 학문을 게을리하게 한다",
-      "sejongRebuttal": "글을 아는 것과 학문을 닦는 것은 다르다. 백성이 글을 알아야 억울함을 펴고 법을 안다.",
+      "opponentClaim": "학문 쇠퇴 우려 - 쉬운 언문만 배우면 성리학을 등한시하고 문물 교화가 무너진다 (상소 3조)",
+      "sejongRebuttal": "새롭고 기이한 기예라 하나, 나는 늘그막에 서적으로 벗 삼을 뿐이다. 삼강행실을 언문으로 번역하면 어리석은 백성도 쉬이 깨달아 충신·효자·열녀가 무리로 나올 것이다.",
       "sejongResponded": true,
       "playerEffect": {
         "gaugeGain": 15,
-        "goodMove": "형벌·억울함 등 백성의 실생활 문제로 연결하면 효과가 크다."
+        "goodMove": "백성 교화와 실생활의 이로움으로 연결하면 효과가 크다."
       },
-      "sourceRef": ["sejong-006"]
+      "sourceRef": ["sejong-005"]
     },
     {
       "id": "issue-4",
-      "opponentClaim": "이런 큰일을 신하들과 충분히 논의하지 않고 서둘렀다 (절차 문제)",
+      "opponentClaim": "형옥 공평 반박 - 억울한 옥사는 옥리에게 달렸지 말과 글이 같은지에 달린 게 아니다 (상소 4조)",
       "sejongRebuttal": null,
       "sejongResponded": false,
       "playerEffect": {
-        "avoidNote": "세종이 사료상 정면으로 답하지 않고 넘어간 논거.",
+        "avoidNote": "세종이 사료상 직접 답하지 않고 넘어간 논거 (실용론에 대한 침묵).",
         "strict": {
-          "reaction": "세종이 답을 아끼며 '이는 이미 정한 일이다'라고만 한다.",
+          "reaction": "세종이 답을 아끼며 다른 이야기로 넘어간다.",
           "gaugeGain": 0
         },
         "reward": {
-          "reaction": "플레이어가 절차의 정당성을 잘 설명하면 세종이 수긍한다.",
+          "reaction": "플레이어가 글을 아는 것이 백성의 억울함을 줄인다는 논리를 잘 세우면 세종이 수긍한다.",
           "gaugeGain": 25
         },
         "mixed": {
           "defaultReaction": "기본적으로는 넘어가나, 플레이어가 잘 메우면 숨은 고득점.",
           "gaugeGain": 0,
-          "hiddenTrigger": "플레이어가 절차의 정당성을 설득력 있게 제시했을 때",
+          "hiddenTrigger": "플레이어가 문해(文解)와 백성의 권리를 설득력 있게 연결했을 때",
           "hiddenGaugeGain": 25
         }
       },
-      "sourceRef": null
+      "sourceRef": ["sejong-006"]
     },
     {
       "id": "issue-5",
-      "opponentClaim": "백성이 글을 알면 오히려 나라 다스리기가 어려워진다",
-      "sejongRebuttal": "백성이 글을 알아 스스로 뜻을 펴는 것이 곧 나라의 근본을 튼튼히 하는 길이다.",
+      "opponentClaim": "절차·속도 비판 - 넓은 의논 없이 서둘러 반포하니 천하후세의 공의가 우려된다 (상소 5조)",
+      "sejongRebuttal": "내 나이 들어 국사를 세자에게 맡겼으니, 세자가 공사라면 세미한 일도 참여해 결정함이 마땅하다. 언문도 그와 같다.",
       "sejongResponded": true,
       "playerEffect": {
         "gaugeGain": 15,
-        "goodMove": "애민 정신과 통치의 근본을 연결하면 세종이 강하게 공감한다."
+        "goodMove": "세자 위임과 국정 절차의 정당성으로 접근하면 세종이 공감한다. (절차 논거에는 세자 참여로 부분 반박)"
       },
-      "sourceRef": ["sejong-003"]
+      "sourceRef": ["sejong-007"]
     }
   ]
 }
