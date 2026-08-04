@@ -45,6 +45,16 @@ function renderGauge() {
   $("turn-count").textContent = "턴 " + state.turn;
 }
 
+// 설득의 축 진행 표시: 찾기 전엔 이름 가림(숨은조건 추리 유지), 커버하면 공개
+function renderAxisTrack() {
+  const axes = chars[charId]?.profile?.values?.["통하는_가치"] || [];
+  const el = $("axis-track");
+  el.innerHTML = axes.map((a) => {
+    const on = state.coveredAxes.has(a.axis);
+    return `<span class="axis-chip${on ? " on" : ""}">${on ? "✓ " + a.axis : "？"}</span>`;
+  }).join("");
+}
+
 function addLine(text, cls) {
   const div = document.createElement("div");
   div.className = "msg " + cls;
@@ -77,6 +87,7 @@ function startGame(id) {
   $("char-diff").textContent = scenario.timeLabel || DIFF_KO[profile.difficulty] || "";
   $("turn-input").placeholder = `${profile.displayName}에게 건넬 논거를 입력…`;
   renderGauge();
+  renderAxisTrack();
   addLine(scenario.openingLines?.[tone] || scenario.openingLines?.classic || "…", "npc");
   show("scr-chat");
   $("turn-input").focus();
@@ -171,6 +182,7 @@ async function onTurn(e) {
   const p = verdict.provider && verdict.provider !== "offline" ? " · " + verdict.provider : "";
   addLine(`[${verdict.grade} ${tag}${p}]`, "grade-tag");
   renderGauge();
+  renderAxisTrack();
   maybeUnlockHint();
 
   if (state.status !== "CONTINUE") setTimeout(endGame, 700);

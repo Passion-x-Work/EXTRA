@@ -125,6 +125,11 @@ button, select, input { font-family: inherit; }
 .msg.hint b { color: var(--seal); }
 .hint-src { font-size: .66rem; color: #9a9078; margin-top: 5px; }
 
+/* 설득의 축 진행 표시 */
+.axis-track { display: flex; gap: 6px; flex-wrap: wrap; padding: 8px 18px 0; max-width: 760px; margin: 0 auto; width: 100%; }
+.axis-chip { font-size: .66rem; padding: 3px 11px; border-radius: 20px; background: rgba(255,251,240,.55); border: 1px solid rgba(0,0,0,.15); color: var(--head-text, #7c7059); font-weight: 700; }
+.axis-chip.on { background: var(--seal); color: #fff; border-color: var(--seal); }
+
 .turn-form { display: flex; gap: 8px; padding: 10px 18px; margin: 0 auto; width: 100%; max-width: 760px; background: linear-gradient(180deg, transparent, rgba(0,0,0,.06)); }
 .turn-form input { flex: 1; padding: 12px 15px; border: 1.5px solid rgba(0,0,0,.14); border-radius: 12px; font-size: .95rem; background: rgba(255,252,244,.96); }
 .turn-form input:focus { outline: none; border-color: var(--gold); }
