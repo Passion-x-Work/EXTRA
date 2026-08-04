@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1000" preserveAspectRatio="xMidYMid slice" role="img" aria-label="일월오봉도와 근정전 배경 (전통 모티프 오리지널)">
+  <!-- 하늘 -->
+  <rect width="1200" height="1000" fill="#4785aa"/>
+  <!-- 달(왼쪽) · 해(오른쪽) -->
+  <circle cx="235" cy="150" r="72" fill="#f3f2ec"/>
+  <circle cx="965" cy="155" r="72" fill="#c9302b"/>
+
+  <!-- 오봉(다섯 봉우리) — 전통 층운 문양 -->
+  <g>
+    <path d="M-40 620 Q150 360 340 620 Z" fill="#9ecdaf"/>
+    <path d="M860 620 Q1050 360 1240 620 Z" fill="#9ecdaf"/>
+    <path d="M180 620 Q380 300 580 620 Z" fill="#a9d2b8"/>
+    <path d="M620 620 Q820 300 1020 620 Z" fill="#a9d2b8"/>
+    <path d="M360 620 Q600 180 840 620 Z" fill="#b7ddc4"/>
+    <!-- 층운(개미허리) 곡선 -->
+    <g fill="none" stroke="#ffffff" stroke-width="4" opacity="0.55" stroke-linecap="round">
+      <path d="M470 610 Q600 300 730 610"/>
+      <path d="M500 610 Q600 360 700 610"/>
+      <path d="M530 610 Q600 420 670 610"/>
+      <path d="M250 615 Q380 380 510 615"/>
+      <path d="M690 615 Q820 380 950 615"/>
+      <path d="M40 620 Q170 430 300 620"/>
+      <path d="M900 620 Q1030 430 1160 620"/>
+    </g>
+    <!-- 폭포 -->
+    <g fill="#eef6f0"><rect x="405" y="470" width="9" height="140" rx="4"/><rect x="786" y="470" width="9" height="140" rx="4"/></g>
+  </g>
+
+  <!-- 물결(봉우리 아래) -->
+  <g fill="none" stroke="#dfeee6" stroke-width="5" opacity="0.8" stroke-linecap="round">
+    <path d="M0 640 q40 -22 80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0"/>
+    <path d="M40 665 q40 -22 80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0"/>
+  </g>
+
+  <!-- 적송(붉은 소나무) 좌/우 -->
+  <g>
+    <g stroke="#a4392a" stroke-width="16" fill="none" stroke-linecap="round">
+      <path d="M150 640 V300 M150 430 l-70 -60 M150 470 l70 -55 M150 370 l-55 -45"/>
+      <path d="M1050 640 V300 M1050 430 l70 -60 M1050 470 l-70 -55 M1050 370 l55 -45"/>
+    </g>
+    <g fill="#2f7d4a">
+      <circle cx="80" cy="360" r="34"/><circle cx="150" cy="290" r="40"/><circle cx="225" cy="405" r="34"/><circle cx="105" cy="330" r="26"/>
+      <circle cx="1120" cy="360" r="34"/><circle cx="1050" cy="290" r="40"/><circle cx="975" cy="405" r="34"/><circle cx="1095" cy="330" r="26"/>
+    </g>
+    <g fill="#46965b" opacity="0.9">
+      <circle cx="150" cy="290" r="24"/><circle cx="80" cy="360" r="20"/><circle cx="1050" cy="290" r="24"/><circle cx="1120" cy="360" r="20"/>
+    </g>
+  </g>
+
+  <!-- 근정전 -->
+  <g>
+    <!-- 석축 기단 + 계단 -->
+    <rect x="0" y="770" width="1200" height="230" fill="#e9e0c9"/>
+    <g stroke="#d3c6a3" stroke-width="2">
+      <line x1="0" y1="812" x2="1200" y2="812"/><line x1="0" y1="856" x2="1200" y2="856"/><line x1="0" y1="905" x2="1200" y2="905"/>
+    </g>
+    <polygon points="520,1000 680,1000 640,780 560,780" fill="#ded2b2"/>
+    <g stroke="#cabd98" stroke-width="2"><line x1="556" y1="820" x2="644" y2="820"/><line x1="551" y1="860" x2="649" y2="860"/><line x1="545" y1="908" x2="655" y2="908"/></g>
+
+    <!-- 하층 몸체(단청) -->
+    <rect x="250" y="640" width="700" height="130" fill="#8fb9b4"/>
+    <g fill="#9a4436"><rect x="270" y="640" width="22" height="130"/><rect x="392" y="640" width="22" height="130"/><rect x="514" y="640" width="22" height="130"/><rect x="636" y="640" width="22" height="130"/><rect x="758" y="640" width="22" height="130"/><rect x="908" y="640" width="22" height="130"/></g>
+    <g fill="#16222b"><rect x="300" y="672" width="80" height="98"/><rect x="546" y="662" width="100" height="108"/><rect x="812" y="672" width="80" height="98"/></g>
+    <rect x="250" y="640" width="700" height="16" fill="#2f6f9e"/>
+
+    <!-- 하층 지붕(기와) -->
+    <path d="M180 648 Q210 566 300 560 H900 Q990 566 1020 648 Q940 626 860 626 H340 Q260 626 180 648 Z" fill="#59696f"/>
+    <path d="M180 648 Q940 612 1020 648 Q940 626 860 626 H340 Q260 626 180 648 Z" fill="#43535a"/>
+
+    <!-- 상층 몸체(단청) -->
+    <rect x="360" y="470" width="480" height="112" fill="#8fb9b4"/>
+    <g fill="#9a4436"><rect x="382" y="470" width="20" height="112"/><rect x="486" y="470" width="20" height="112"/><rect x="590" y="470" width="20" height="112"/><rect x="694" y="470" width="20" height="112"/><rect x="800" y="470" width="20" height="112"/></g>
+    <g fill="#16222b"><rect x="412" y="500" width="66" height="82"/><rect x="620" y="500" width="66" height="82"/></g>
+    <rect x="360" y="470" width="480" height="14" fill="#2f6f9e"/>
+    <!-- 현판 -->
+    <rect x="556" y="486" width="88" height="30" rx="3" fill="#26313a"/>
+    <g fill="#d3ad48"><rect x="566" y="494" width="14" height="14"/><rect x="586" y="494" width="14" height="14"/><rect x="606" y="494" width="14" height="14"/><rect x="626" y="494" width="9" height="14"/></g>
+
+    <!-- 상층 지붕 -->
+    <path d="M300 478 Q330 402 410 396 H790 Q870 402 900 478 Q820 456 750 456 H450 Q380 456 300 478 Z" fill="#59696f"/>
+    <path d="M300 478 Q820 444 900 478 Q820 456 750 456 H450 Q380 456 300 478 Z" fill="#43535a"/>
+    <!-- 취두/용마루 -->
+    <rect x="590" y="378" width="20" height="20" fill="#43535a"/>
+  </g>
+</svg>
