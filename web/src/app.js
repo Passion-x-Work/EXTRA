@@ -54,8 +54,10 @@ function startGame(id) {
   state = initState(cfg, charId);
   firstInputSaved = "";
   $("log").innerHTML = "";
+  $("scr-chat").dataset.theme = charId; // 인물별 세계 배경/테마
+  $("win-seal").classList.remove("stamped");
   $("char-name").textContent = profile.displayName;
-  $("char-diff").textContent = DIFF_KO[profile.difficulty] || profile.difficulty || "";
+  $("char-diff").textContent = scenario.timeLabel || DIFF_KO[profile.difficulty] || "";
   $("turn-input").placeholder = `${profile.displayName}에게 건넬 논거를 입력…`;
   renderGauge();
   addLine(scenario.openingLines?.[tone] || scenario.openingLines?.classic || "…", "npc");
@@ -66,13 +68,16 @@ function startGame(id) {
 function endGame() {
   const won = state.status === "WIN";
   const scn = chars[charId].scenario;
-  $("result-title").textContent = won ? "설득 성공 🎉" : "다시 도전";
+  $("result-title").textContent = won ? "설득 성공" : "다시 도전";
   $("result-line").textContent = firstInputSaved ? `“${firstInputSaved}”` : "";
   $("result-turns").textContent = state.turn + "턴";
   $("result-grade").textContent = won ? resultBand(state.turn, cfg) : "—";
   const note = won ? scn.winScene?.historicalNote : scn.loseScene?.historicalNote;
   $("result-cta").textContent = note || "";
   show("scr-result");
+  const seal = $("win-seal");
+  seal.classList.remove("stamped");
+  if (won) requestAnimationFrame(() => seal.classList.add("stamped")); // 낙관 쾅
 }
 
 async function getVerdict(input, mode) {
