@@ -56,6 +56,7 @@ function startGame(id) {
   $("log").innerHTML = "";
   $("char-name").textContent = profile.displayName;
   $("char-diff").textContent = DIFF_KO[profile.difficulty] || profile.difficulty || "";
+  $("turn-input").placeholder = `${profile.displayName}에게 건넬 논거를 입력…`;
   renderGauge();
   addLine(scenario.openingLines?.[tone] || scenario.openingLines?.classic || "…", "npc");
   show("scr-chat");
