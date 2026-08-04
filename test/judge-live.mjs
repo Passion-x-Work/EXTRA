@@ -1,6 +1,7 @@
 // test/judge-live.mjs — 실제 GPT/Claude 판정을 CLI로 빠르게 확인.
 //   실행: npm run judge -- gpt        (또는 claude / both)
 //   .env 의 OPENAI_API_KEY / CLAUDE_API_KEY 사용 (npm run judge 가 --env-file 로드)
+import "../server/loadEnv.mjs"; // .env 로드
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";

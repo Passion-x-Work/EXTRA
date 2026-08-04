@@ -1,23 +1,14 @@
 // server/index.mjs — 판정 프록시. 키(OPENAI/CLAUDE)는 서버에만. 클라이언트엔 노출 X.
 //   POST /api/judge  { input, charId, mode, tone, provider } -> Verdict
 // 게임 상태(게이지·턴·승패)는 클라이언트 engine이 소유. 서버는 판정만.
+import "./loadEnv.mjs"; // .env 를 먼저 로드(시스템 환경변수 override)
 import { createServer } from "node:http";
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { judge } from "./ai/judge.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-
-// .env 간단 로더(의존성 없이)
-const envPath = join(root, ".env");
-if (existsSync(envPath)) {
-  for (const line of readFileSync(envPath, "utf-8").split("\n")) {
-    const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
-    if (m && !process.env[m[1]]) process.env[m[1]] = m[2].replace(/^["']|["']$/g, "");
-  }
-}
-
 const readJson = (p) => JSON.parse(readFileSync(join(root, p), "utf-8"));
 const cfg = readJson("config/difficulty.json");
 const chars = {}; // 캐릭터 데이터 캐시
