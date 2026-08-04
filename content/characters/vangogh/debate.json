@@ -1,0 +1,79 @@
+{
+  "_comment": "설득 쟁점 표(맛보기). 회피 논거(issue-2 테오 죄책감, issue-5 미래 인정)는 반고흐가 시원히 반박 못 하는 지점. avoidanceMode를 strict/reward/mixed로 바꿔 테스트. 필드명은 generic(responded/rebuttal).",
+  "figure": "vangogh",
+  "scene": "붓을 놓을지 고민하는 반 고흐 (1889, 생레미)",
+  "avoidanceMode": "mixed",
+  "startGauge": 30,
+  "goalGauge": 100,
+  "issues": [
+    {
+      "id": "issue-1",
+      "opponentClaim": "네 그림은 한 점도 팔리지 않는다. 화가로서 실패한 것 아니냐.",
+      "rebuttal": "나는 팔려고 그리는 것이 아니오. 사람의 마음에 닿고자, 훗날 누군가 '그는 깊이 느끼는 이였다' 말해주길 바라며 그릴 뿐이오.",
+      "responded": true,
+      "playerEffect": {
+        "gaugeGain": 20,
+        "goodMove": "판매가 아니라 감정·교감의 가치로 접근하면 크게 수긍한다."
+      },
+      "sourceRef": ["vangogh-001", "vangogh-003"]
+    },
+    {
+      "id": "issue-2",
+      "opponentClaim": "동생 테오에게 짐이 된다. 그의 돈만 축내고 있지 않으냐.",
+      "rebuttal": null,
+      "responded": false,
+      "playerEffect": {
+        "avoidNote": "테오에 대한 죄책감 — 반고흐가 시원히 반박하지 못하는 지점.",
+        "strict": { "reaction": "빈센트는 고개를 떨군다. '…그 말이 가장 아프오.'", "gaugeGain": 0 },
+        "reward": { "reaction": "플레이어가 '네 그림 자체가 테오에게 주는 보답'이라 말하면 빈센트가 크게 흔들린다.", "gaugeGain": 25 },
+        "mixed": {
+          "defaultReaction": "기본적으로는 말을 잇지 못하나, 플레이어가 잘 메우면 숨은 고득점.",
+          "gaugeGain": 0,
+          "hiddenTrigger": "테오의 후원을 '빚'이 아니라 '함께 만드는 것'으로 재해석해줄 때",
+          "hiddenGaugeGain": 25
+        }
+      },
+      "sourceRef": ["vangogh-002"]
+    },
+    {
+      "id": "issue-3",
+      "opponentClaim": "정식 미술 교육도 없고 아카데미의 규칙도 지키지 않으면서 무슨 화가냐.",
+      "rebuttal": "규칙이 아니라 색과 감정의 진실을 믿소. 정직하게 노동하는 사람들의 삶을, 나는 내 눈과 마음으로 그리려는 것이오.",
+      "responded": true,
+      "playerEffect": {
+        "gaugeGain": 20,
+        "goodMove": "규칙보다 색·감정의 진실, 평범한 삶의 가치를 지지하면 효과가 크다."
+      },
+      "sourceRef": ["vangogh-004"]
+    },
+    {
+      "id": "issue-4",
+      "opponentClaim": "너는 병들었다. 이쯤에서 붓을 놓는 게 낫지 않겠나.",
+      "rebuttal": "붓을 들 때에야 나는 나로 살아있소. 발작이 지나가면, 나는 다시 그린다. 그림이 나를 붙들어 주오.",
+      "responded": true,
+      "playerEffect": {
+        "gaugeGain": 20,
+        "goodMove": "그림이 삶의 버팀목임을 인정해주면 수긍한다. (병을 미화하지 않되, 창작이 그를 지탱함)"
+      },
+      "sourceRef": ["vangogh-005"]
+    },
+    {
+      "id": "issue-5",
+      "opponentClaim": "먼 훗날 인정받는다는 보장도 없지 않으냐.",
+      "rebuttal": null,
+      "responded": false,
+      "playerEffect": {
+        "avoidNote": "미래의 인정 — 반고흐도 확신하지 못하는 지점.",
+        "strict": { "reaction": "빈센트가 창밖을 본다. '…모르오. 정말 모르오.'", "gaugeGain": 0 },
+        "reward": { "reaction": "'인정이 아니라 진심을 남기는 것 자체가 목적'이라 말하면 빈센트가 눈을 빛낸다.", "gaugeGain": 25 },
+        "mixed": {
+          "defaultReaction": "기본적으로는 흔들리나, 플레이어가 잘 메우면 숨은 고득점.",
+          "gaugeGain": 0,
+          "hiddenTrigger": "인정 여부와 무관하게 '시도하고 남기는 것'의 가치를 설득력 있게 세울 때",
+          "hiddenGaugeGain": 25
+        }
+      },
+      "sourceRef": ["vangogh-006", "vangogh-005"]
+    }
+  ]
+}

@@ -1,14 +1,25 @@
-// web/src/app.js — 오프라인 판정으로 도는 세종 데모(키 없이 즉시 플레이).
+// web/src/app.js — 멀티 캐릭터. 오프라인 판정으로 즉시 플레이, provider 드롭다운으로 GPT/Claude 전환.
 import cfg from "../../config/difficulty.json";
-import profile from "../../content/characters/sejong/profile.json";
-import knowledge from "../../content/characters/sejong/knowledge.json";
-import debate from "../../content/characters/sejong/debate.json";
 import { initState, applyGrade, resultBand } from "../../server/engine/applyGrade.js";
 import { judgeOffline } from "../../server/ai/judge.js";
 
-const character = { profile, knowledge, debate };
+// content/characters/<id>/*.json 전부 로드 → chars[id] = { profile, knowledge, debate, scenario }
+const modules = import.meta.glob("../../content/characters/*/*.json", { eager: true });
+const chars = {};
+for (const [path, mod] of Object.entries(modules)) {
+  const m = path.match(/characters\/([^/]+)\/([^/]+)\.json$/);
+  if (!m) continue;
+  (chars[m[1]] ??= {})[m[2]] = mod.default ?? mod;
+}
+
+const DIFF_KO = { tutorial: "튜토리얼", standard: "표준", hard: "고난도" };
 const $ = (id) => document.getElementById(id);
-let state, tone = "classic", firstInputSaved = "";
+let state, charId, tone = "classic", firstInputSaved = "";
+
+const character = () => {
+  const c = chars[charId];
+  return { profile: c.profile, knowledge: c.knowledge, debate: c.debate };
+};
 
 function show(screen) {
   document.querySelectorAll(".screen").forEach((s) => s.classList.remove("active"));
@@ -16,8 +27,7 @@ function show(screen) {
 }
 
 function renderGauge() {
-  const pct = Math.max(0, Math.min(100, state.gauge));
-  $("gauge-fill").style.width = pct + "%";
+  $("gauge-fill").style.width = Math.max(0, Math.min(100, state.gauge)) + "%";
   $("gauge-num").textContent = state.gauge;
   $("turn-count").textContent = "턴 " + state.turn;
 }
@@ -34,48 +44,50 @@ function addSources(sources) {
   if (!sources || !sources.length) return;
   const div = document.createElement("div");
   div.className = "sources";
-  div.textContent = "근거: " + sources.map((s) => s.source.split(".")[0].slice(0, 40)).join(" / ");
+  div.textContent = "근거: " + sources.map((s) => s.source.split("/")[0].split(".")[0].slice(0, 40)).join(" / ");
   $("log").appendChild(div);
 }
 
-function startGame() {
-  state = initState(cfg, "sejong");
+function startGame(id) {
+  charId = id;
+  const { profile, scenario } = chars[charId];
+  state = initState(cfg, charId);
   firstInputSaved = "";
   $("log").innerHTML = "";
   $("char-name").textContent = profile.displayName;
+  $("char-diff").textContent = DIFF_KO[profile.difficulty] || profile.difficulty || "";
   renderGauge();
-  addLine(
-    "세종: 그대는 어인 일로 과인을 찾았는가. 새 문자를 만들려 하니 다들 '중국의 글이 있는데 무엇하러' 하는구나. 그대라면 나를 도와 신하들을 설득할 수 있겠는가?",
-    "npc"
-  );
+  addLine(scenario.openingLines?.[tone] || scenario.openingLines?.classic || "…", "npc");
   show("scr-chat");
   $("turn-input").focus();
 }
 
 function endGame() {
   const won = state.status === "WIN";
-  $("result-title").textContent = won ? "세종대왕의 뜻을 굳혔습니다" : "설득에 실패했습니다";
+  const scn = chars[charId].scenario;
+  $("result-title").textContent = won ? "설득 성공 🎉" : "다시 도전";
   $("result-line").textContent = firstInputSaved ? `“${firstInputSaved}”` : "";
   $("result-turns").textContent = state.turn + "턴";
   $("result-grade").textContent = won ? resultBand(state.turn, cfg) : "—";
+  const note = won ? scn.winScene?.historicalNote : scn.loseScene?.historicalNote;
+  $("result-cta").textContent = note || "";
   show("scr-result");
 }
 
-// 판정: 오프라인은 로컬, gpt/claude는 서버 프록시(/api/judge)로.
 async function getVerdict(input, mode) {
   const provider = $("provider").value;
-  if (provider === "offline") return judgeOffline(input, character, { mode, cfg, tone });
+  if (provider === "offline") return judgeOffline(input, character(), { mode, cfg, tone });
   try {
     const res = await fetch("/api/judge", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ input, charId: "sejong", mode, tone, provider }),
+      body: JSON.stringify({ input, charId, mode, tone, provider }),
     });
     if (!res.ok) throw new Error("HTTP " + res.status);
     return await res.json();
   } catch (err) {
     console.warn("판정 프록시 실패 → 오프라인 폴백", err);
-    return judgeOffline(input, character, { mode, cfg, tone });
+    return judgeOffline(input, character(), { mode, cfg, tone });
   }
 }
 
@@ -87,25 +99,25 @@ async function onTurn(e) {
   $("turn-input").value = "";
   addLine("나: " + input, "me");
 
-  const mode = cfg.characters.sejong.mode || "mixed";
+  const mode = cfg.characters[charId]?.mode || "mixed";
   const btn = $("turn-form").querySelector("button");
   btn.disabled = true;
   const verdict = await getVerdict(input, mode);
   btn.disabled = false;
-  state = applyGrade(state, verdict, cfg, "sejong");
+  state = applyGrade(state, verdict, cfg, charId);
 
   addLine(verdict.line, "npc");
   addSources(verdict.sources);
   const tag = { 탁월: "+50", 정합: "+35", 부분: "+15", 불합치: "0", 역효과: "-20" }[verdict.grade];
-  addLine(`[${verdict.grade} ${tag}${verdict.provider && verdict.provider !== "offline" ? " · " + verdict.provider : ""}]`, "grade-tag");
+  const p = verdict.provider && verdict.provider !== "offline" ? " · " + verdict.provider : "";
+  addLine(`[${verdict.grade} ${tag}${p}]`, "grade-tag");
   renderGauge();
 
   if (state.status !== "CONTINUE") setTimeout(endGame, 700);
 }
 
-// 이벤트 바인딩
 document.querySelectorAll(".relic[data-char]").forEach((b) =>
-  b.addEventListener("click", startGame)
+  b.addEventListener("click", () => startGame(b.dataset.char))
 );
 $("turn-form").addEventListener("submit", onTurn);
 $("retry").addEventListener("click", () => show("scr-map"));

@@ -1,0 +1,60 @@
+{
+  "_comment": "RAG 검색용 사료 조각(맛보기 6개). 근거 원본은 docs/research/vangogh-sources.md. 편지 번호 정밀 대조는 본선 전 보강.",
+  "figure": "vangogh",
+  "fragments": [
+    {
+      "id": "vangogh-001",
+      "topic": "팔리지 않는 그림",
+      "keywords": ["판매", "팔리다", "붉은 포도밭", "실패", "돈", "인정"],
+      "content": "빈센트는 생전에 그림을 거의 팔지 못했다. 확인되는 판매는 사실상 《붉은 포도밭》 한 점(1890년, 안나 보흐에게 400프랑)뿐이었다.",
+      "source": "반고흐 미술관(Van Gogh Museum) / Encyclopædia Britannica 'Vincent van Gogh'",
+      "sourceUrl": "https://www.vangoghmuseum.nl",
+      "tier": 2
+    },
+    {
+      "id": "vangogh-002",
+      "topic": "동생 테오의 후원",
+      "keywords": ["테오", "동생", "후원", "생활비", "짐", "죄책감"],
+      "content": "빈센트는 화가 활동 내내 미술상이던 동생 테오의 매달 생활비 후원에 거의 전적으로 의존했다. 테오는 형의 재능을 깊이 믿었다.",
+      "source": "Vincent van Gogh — The Letters(반고흐 미술관·Huygens ING) / 반고흐 미술관",
+      "sourceUrl": "https://www.vangoghletters.org",
+      "tier": 1
+    },
+    {
+      "id": "vangogh-003",
+      "topic": "예술의 목적 - 마음에 닿기",
+      "keywords": ["감정", "마음", "닿다", "느끼다", "표현", "사람"],
+      "content": "빈센트는 그림의 목적을 판매가 아니라 사람의 마음에 닿는 데 두었다. 훗날 사람들이 '그는 깊이, 부드럽게 느끼는 이였다'고 말해주길 바랐다.",
+      "source": "Vincent van Gogh — The Letters(테오에게 보낸 편지, 傳)",
+      "sourceUrl": "https://www.vangoghletters.org",
+      "tier": 1
+    },
+    {
+      "id": "vangogh-004",
+      "topic": "농민에 대한 애정",
+      "keywords": ["농민", "감자 먹는 사람들", "노동", "평범한", "진솔"],
+      "content": "빈센트는 정직한 노동으로 밥을 번 평범한 사람들을 진솔하게 그리려 했다. 《감자 먹는 사람들》(1885)이 그 대표다.",
+      "source": "Vincent van Gogh — The Letters / 반고흐 미술관",
+      "sourceUrl": "https://www.vangoghmuseum.nl",
+      "tier": 1
+    },
+    {
+      "id": "vangogh-005",
+      "topic": "지독한 다작",
+      "keywords": ["다작", "그리다", "멈추지 않다", "작품", "집념"],
+      "content": "빈센트는 약 10년 동안 2,100여 점(유화 약 860점 포함)을 남겼다. 팔리지 않아도 그리기를 멈추지 않았다.",
+      "source": "반고흐 미술관 / Encyclopædia Britannica",
+      "sourceUrl": "https://www.vangoghmuseum.nl",
+      "tier": 2
+    },
+    {
+      "id": "vangogh-006",
+      "topic": "시도할 용기",
+      "keywords": ["용기", "시도", "도전", "삶", "두려움"],
+      "content": "빈센트는 이렇게 적었다. '무언가를 시도할 용기가 없다면, 삶이 대체 무엇이겠는가.'",
+      "source": "Vincent van Gogh — The Letters(테오에게, 1888년경, 傳)",
+      "sourceUrl": "https://www.vangoghletters.org",
+      "tier": 1
+    }
+  ]
+}

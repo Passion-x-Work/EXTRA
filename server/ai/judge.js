@@ -64,19 +64,23 @@ export function judgeOffline(input, character, opts = {}) {
   if (!issue || matchScore === 0)
     return makeVerdict("불합치", `${profile.displayName}: "그건 내 뜻과 잘 닿지 않네. 다시 일러보게."`, [], false, null, input, "offline");
 
-  if (issue.sejongResponded === false) {
+  // 인물별 필드명 일반화: sejong은 sejongResponded/sejongRebuttal, 그 외는 responded/rebuttal
+  const responded = issue.responded ?? issue.sejongResponded;
+  const rebuttal = issue.rebuttal ?? issue.sejongRebuttal;
+
+  if (responded === false) {
     const strong = matchScore >= 2;
     const grade = strong ? modeCfg.hidden_grade : modeCfg.avoid_grade;
     const line = strong
-      ? `${profile.displayName}: "허, 그 말은 미처 생각지 못했네. 옳은 지적이야."`
-      : (issue.playerEffect?.[mode]?.reaction || issue.playerEffect?.strict?.reaction || `${profile.displayName}: "그 이야기는 다음에 하지."`);
+      ? `${profile.displayName}: "…그 말은 미처 생각지 못했소. 옳은 지적이오."`
+      : (issue.playerEffect?.[mode]?.reaction || issue.playerEffect?.strict?.reaction || `${profile.displayName}: "…그 이야기는 지금은 접어두겠소."`);
     return makeVerdict(grade, line, sources, false, issue.id, input, "offline");
   }
 
   const grade = matchScore >= 2 ? "탁월" : "정합";
-  const line = issue.sejongRebuttal
-    ? `${profile.displayName}: "${issue.sejongRebuttal}"`
-    : `${profile.displayName}: "옳도다. 그 말에 뜻이 더욱 굳어지는구나."`;
+  const line = rebuttal
+    ? `${profile.displayName}: "${rebuttal}"`
+    : `${profile.displayName}: "옳소. 그 말에 마음이 더욱 굳어지오."`;
   return makeVerdict(grade, line, sources, false, issue.id, input, "offline");
 }
 
