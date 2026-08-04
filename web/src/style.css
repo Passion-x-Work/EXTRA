@@ -152,7 +152,9 @@ button, select, input { font-family: inherit; }
 .card-meta span:first-child { font-size: .85rem; color: var(--ink-soft); }
 .grade { font-family: var(--serif); font-size: 2.1rem; font-weight: 800; color: var(--gold); }
 .card-cta { font-size: .8rem; color: #6a6151; line-height: 1.55; border-top: 1px dashed var(--line); padding-top: 12px; }
-.retry { padding: 12px 30px; border: none; border-radius: 11px; background: var(--ink); color: var(--hanji); font-size: 1rem; cursor: pointer; font-family: var(--serif); }
+.result-actions { display: flex; gap: 12px; }
+.retry { padding: 12px 26px; border: none; border-radius: 11px; background: var(--ink); color: var(--hanji); font-size: 1rem; cursor: pointer; font-family: var(--serif); }
+.retry--alt { background: transparent; color: var(--ink); border: 1.5px solid var(--gold); }
 
 /* ══════════ 데스크톱: 중앙 문서 프레임 ══════════ */
 @media (min-width: 760px) {

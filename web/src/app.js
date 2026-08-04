@@ -122,10 +122,84 @@ async function onTurn(e) {
   if (state.status !== "CONTINUE") setTimeout(endGame, 700);
 }
 
+// ── 결과 공유 카드 (canvas → PNG). 숨은조건은 담지 않는다. ──
+function roundRect(g, x, y, w, h, r) {
+  g.beginPath(); g.moveTo(x + r, y);
+  g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r);
+  g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath();
+}
+function wrapText(g, text, maxW) {
+  const lines = []; let line = "";
+  for (const ch of text) {
+    if (g.measureText(line + ch).width > maxW && line) { lines.push(line); line = ch; }
+    else line += ch;
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+function buildShareCard() {
+  const won = state.status === "WIN";
+  const { profile, scenario } = chars[charId];
+  const grade = won ? resultBand(state.turn, cfg) : "—";
+  const accent = charId === "vangogh" ? "#2c4ca8" : "#2f6f9e";
+  const seal = "#a8322a", gold = "#ad8234", ink = "#221d15";
+  const W = 1080, H = 1350, cv = document.createElement("canvas");
+  cv.width = W; cv.height = H;
+  const g = cv.getContext("2d");
+
+  g.fillStyle = "#f4ecd7"; g.fillRect(0, 0, W, H);
+  g.strokeStyle = gold; g.lineWidth = 3; g.strokeRect(40, 40, W - 80, H - 80);
+  g.strokeStyle = "#cdbf9d"; g.lineWidth = 1.5; g.strokeRect(54, 54, W - 108, H - 108);
+  g.fillStyle = accent; g.fillRect(54, 54, W - 108, 10);
+
+  g.textBaseline = "top"; g.textAlign = "left";
+  g.fillStyle = ink; g.font = "800 46px 'Nanum Myeongjo', serif"; g.fillText("EXTRA", 92, 96);
+  g.fillStyle = "#7c7059"; g.font = "500 24px 'Noto Sans KR', sans-serif"; g.fillText("역사에 끼어든 단역", 94, 152);
+  g.save(); g.translate(W - 138, 132); g.rotate(-0.12);
+  g.fillStyle = seal; roundRect(g, -46, -34, 92, 100, 10); g.fill();
+  g.fillStyle = "#fff"; g.font = "800 42px 'Nanum Myeongjo', serif"; g.textAlign = "center";
+  g.fillText("端", 0, -20); g.fillText("役", 0, 24); g.restore();
+
+  g.textAlign = "center";
+  g.fillStyle = seal; g.font = "800 66px 'Nanum Myeongjo', serif"; g.fillText(won ? "설득 성공" : "다시 도전", W / 2, 300);
+  g.fillStyle = ink; g.font = "700 42px 'Nanum Myeongjo', serif"; g.fillText(profile.displayName, W / 2, 392);
+  g.fillStyle = "#7c7059"; g.font = "400 26px 'Noto Sans KR', sans-serif"; g.fillText(scenario.timeLabel || "", W / 2, 448);
+
+  g.beginPath(); g.arc(W / 2, 600, 98, 0, Math.PI * 2);
+  g.fillStyle = "#fff8ea"; g.fill(); g.strokeStyle = gold; g.lineWidth = 4; g.stroke();
+  g.fillStyle = gold; g.font = "800 112px 'Nanum Myeongjo', serif"; g.textBaseline = "middle";
+  g.fillText(grade, W / 2, 610); g.textBaseline = "top";
+
+  if (firstInputSaved) {
+    g.fillStyle = "#4a4132"; g.font = "italic 34px 'Nanum Myeongjo', serif";
+    wrapText(g, `“${firstInputSaved}”`, W - 260).slice(0, 3).forEach((ln, i) => g.fillText(ln, W / 2, 780 + i * 50));
+  }
+  g.fillStyle = "#7c7059"; g.font = "500 28px 'Noto Sans KR', sans-serif";
+  g.fillText(`${state.turn}턴${won ? " · " + grade + "등급" : ""}`, W / 2, 970);
+  g.fillStyle = seal; g.font = "700 40px 'Nanum Myeongjo', serif"; g.fillText("당신도 설득할 수 있는가?", W / 2, 1130);
+  g.fillStyle = "#9a9078"; g.font = "400 24px 'Noto Sans KR', sans-serif"; g.fillText("EXTRA · 역사에 끼어든 단역", W / 2, 1210);
+  g.textAlign = "left";
+  return cv;
+}
+async function saveCard() {
+  try { await document.fonts.ready; } catch (_) {}
+  buildShareCard().toBlob(async (blob) => {
+    if (!blob) return;
+    const file = new File([blob], "extra-card.png", { type: "image/png" });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try { await navigator.share({ files: [file], title: "EXTRA" }); return; } catch (_) {}
+    }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = "extra-card.png"; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }, "image/png");
+}
+
 document.querySelectorAll(".relic[data-char]").forEach((b) =>
   b.addEventListener("click", () => startGame(b.dataset.char))
 );
 $("turn-form").addEventListener("submit", onTurn);
+$("save-card").addEventListener("click", saveCard);
 $("retry").addEventListener("click", () => show("scr-map"));
 $("tone-toggle").addEventListener("click", () => {
   tone = tone === "classic" ? "meme" : "classic";
