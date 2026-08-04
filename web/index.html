@@ -49,14 +49,18 @@
       <!-- 화면 2: 대화 -->
       <section id="scr-chat" class="screen" data-theme="sejong">
         <header class="chat-head">
-          <div class="who"><span id="char-name">세종대왕</span><small id="char-diff"></small></div>
+          <div class="head-row">
+            <div class="who"><span id="char-name">세종대왕</span><small id="char-diff"></small></div>
+            <div class="head-ctl">
+              <select id="provider" class="ctl" title="판정 엔진">
+                <option value="offline">오프라인</option>
+                <option value="gpt">GPT</option>
+                <option value="claude">Claude</option>
+              </select>
+              <button id="tone-toggle" class="ctl" title="말투 전환">정통</button>
+            </div>
+          </div>
           <div class="gauge"><div id="gauge-fill" class="gauge-fill"></div><span id="gauge-num">40</span></div>
-          <select id="provider" class="ctl" title="판정 엔진">
-            <option value="offline">오프라인</option>
-            <option value="gpt">GPT</option>
-            <option value="claude">Claude</option>
-          </select>
-          <button id="tone-toggle" class="ctl" title="말투 전환">정통</button>
         </header>
         <div id="axis-track" class="axis-track" title="설득의 축 — 찾으면 공개"></div>
         <div id="log" class="log"></div>
