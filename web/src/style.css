@@ -11,54 +11,92 @@
 html, body { height: 100%; }
 body {
   font-family: "Noto Sans KR", "Malgun Gothic", sans-serif;
-  background: var(--paper);
   color: var(--ink);
-  display: flex; justify-content: center;
+  min-height: 100dvh;
+  display: flex; align-items: center; justify-content: center;
+  /* 데스크톱 배경(먹·한지 그라데이션) — 프레임을 돋보이게 */
+  background: radial-gradient(120% 90% at 50% 0%, #efe7d6 0%, #e4dac4 55%, #d8ccb0 100%);
 }
-#app { width: 100%; max-width: 480px; height: 100dvh; position: relative; overflow: hidden; }
+
+/* 앱: 모바일=풀스크린, 데스크톱=중앙 프레임 카드 */
+#app {
+  position: relative; overflow: hidden;
+  width: 100%; max-width: 480px; height: 100dvh;
+  background: var(--paper);
+}
+
 .screen { position: absolute; inset: 0; display: none; flex-direction: column; padding: 20px; }
 .screen.active { display: flex; }
 
-/* 지도 */
-#scr-map { justify-content: center; align-items: center; gap: 14px; text-align: center; background: radial-gradient(circle at 50% 30%, var(--paper2), var(--paper)); }
+/* ── 지도 ── */
+#scr-map { justify-content: center; align-items: center; gap: 16px; text-align: center;
+  background: radial-gradient(circle at 50% 28%, var(--paper2), var(--paper)); }
 .logo { font-size: 3rem; letter-spacing: 4px; color: var(--accent); font-weight: 900; }
-.tagline { color: #5a5348; margin-bottom: 18px; font-size: .95rem; }
+.tagline { color: #5a5348; margin-bottom: 12px; font-size: .95rem; }
+.relics { display: flex; flex-direction: column; gap: 14px; width: 100%; align-items: center; }
 .relic { width: 100%; max-width: 340px; padding: 16px; border: 1.5px solid var(--line); border-radius: 14px;
-  background: #fff8ec; cursor: pointer; display: flex; flex-direction: column; gap: 4px; transition: transform .1s, box-shadow .2s; }
-.relic:hover:not(.disabled) { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(120,90,30,.18); border-color: var(--gold); }
+  background: #fff8ec; cursor: pointer; display: flex; flex-direction: column; gap: 4px;
+  transition: transform .1s, box-shadow .2s, border-color .2s; text-align: center; }
+.relic:hover:not(.disabled) { transform: translateY(-3px); box-shadow: 0 8px 22px rgba(120,90,30,.2); border-color: var(--gold); }
 .relic-name { font-weight: 800; font-size: 1.05rem; }
 .relic-sub { font-size: .8rem; color: var(--accent); }
 .relic.disabled { opacity: .45; cursor: not-allowed; }
 
-/* 대화 */
-.chat-head { display: flex; align-items: center; gap: 10px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+/* ── 대화 ── */
+.chat-head { display: flex; align-items: center; gap: 10px; padding-bottom: 12px; border-bottom: 1px solid var(--line);
+  width: 100%; max-width: 720px; margin: 0 auto; }
 .who { display: flex; flex-direction: column; }
 .who span { font-weight: 800; }
 .who small { color: var(--gold); font-size: .7rem; }
 .gauge { flex: 1; height: 14px; background: var(--paper2); border-radius: 8px; position: relative; overflow: hidden; border: 1px solid var(--line); }
 .gauge-fill { height: 100%; width: 40%; background: linear-gradient(90deg, var(--gold), var(--accent)); transition: width .5s ease; }
 .gauge span { position: absolute; right: 6px; top: -2px; font-size: .65rem; font-weight: 700; color: #fff; mix-blend-mode: difference; }
-.tone { border: 1px solid var(--line); background: #fff; border-radius: 8px; padding: 4px 10px; font-size: .8rem; cursor: pointer; }
+.tone { border: 1px solid var(--line); background: #fff; border-radius: 8px; padding: 5px 10px; font-size: .8rem; cursor: pointer; }
 
-.log { flex: 1; overflow-y: auto; padding: 14px 2px; display: flex; flex-direction: column; gap: 10px; }
-.msg { padding: 10px 13px; border-radius: 12px; max-width: 85%; line-height: 1.5; font-size: .92rem; white-space: pre-wrap; }
+.log { flex: 1; overflow-y: auto; padding: 14px 2px; display: flex; flex-direction: column; gap: 10px;
+  width: 100%; max-width: 720px; margin: 0 auto; }
+.msg { padding: 10px 13px; border-radius: 12px; max-width: 85%; line-height: 1.55; font-size: .92rem; white-space: pre-wrap; }
 .msg.npc { background: #fff8ec; border: 1px solid var(--line); align-self: flex-start; border-bottom-left-radius: 3px; }
 .msg.me { background: var(--me); color: #fff; align-self: flex-end; border-bottom-right-radius: 3px; }
 .sources { font-size: .7rem; color: #8a7f68; align-self: flex-start; padding-left: 4px; }
 .grade-tag { font-size: .72rem; color: var(--accent); align-self: center; font-weight: 700; letter-spacing: 1px; }
 
-.turn-form { display: flex; gap: 8px; padding-top: 10px; border-top: 1px solid var(--line); }
+.turn-form { display: flex; gap: 8px; padding-top: 10px; border-top: 1px solid var(--line);
+  width: 100%; max-width: 720px; margin: 0 auto; }
 .turn-form input { flex: 1; padding: 12px 14px; border: 1.5px solid var(--line); border-radius: 12px; font-size: .95rem; background: #fff; }
 .turn-form input:focus { outline: none; border-color: var(--gold); }
 .turn-form button { padding: 0 18px; border: none; border-radius: 12px; background: var(--accent); color: #fff; font-size: 1rem; cursor: pointer; }
+.turn-form button:disabled { opacity: .5; cursor: wait; }
 .turn-count { text-align: center; font-size: .7rem; color: #a89c82; padding-top: 6px; }
 
-/* 결과 카드 */
+/* ── 결과 카드 ── */
 #scr-result { justify-content: center; align-items: center; gap: 20px; }
-.card { width: 100%; max-width: 340px; background: #fff8ec; border: 2px solid var(--gold); border-radius: 18px; padding: 28px 22px; text-align: center; box-shadow: 0 10px 30px rgba(120,90,30,.2); }
+.card { width: 100%; max-width: 380px; background: #fff8ec; border: 2px solid var(--gold); border-radius: 18px; padding: 28px 22px; text-align: center; box-shadow: 0 10px 30px rgba(120,90,30,.2); }
 .card-title { font-size: 1.3rem; font-weight: 900; color: var(--accent); margin-bottom: 14px; }
 .card-line { font-style: italic; color: #4a4438; margin-bottom: 16px; min-height: 1.2em; }
 .card-meta { display: flex; justify-content: center; gap: 16px; align-items: center; margin-bottom: 14px; }
 .grade { font-size: 2rem; font-weight: 900; color: var(--gold); }
-.card-cta { font-size: .85rem; color: #6a6252; border-top: 1px dashed var(--line); padding-top: 12px; }
+.card-cta { font-size: .82rem; color: #6a6252; line-height: 1.5; border-top: 1px dashed var(--line); padding-top: 12px; }
 .retry { padding: 12px 28px; border: none; border-radius: 12px; background: var(--ink); color: var(--paper); font-size: 1rem; cursor: pointer; }
+
+/* ══ 데스크톱: 중앙 프레임 + 넉넉한 레이아웃 ══ */
+@media (min-width: 760px) {
+  body { padding: 28px; }
+  #app {
+    max-width: 1000px;
+    height: min(100dvh - 56px, 900px);
+    border-radius: 24px;
+    border: 1px solid var(--line);
+    box-shadow: 0 24px 60px rgba(60,45,20,.28);
+  }
+  .screen { padding: 40px; }
+  .logo { font-size: 4.2rem; letter-spacing: 6px; }
+  .tagline { font-size: 1.1rem; margin-bottom: 24px; }
+  /* 인물 선택: 가로 3열 카드 */
+  .relics { flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 20px; max-width: 900px; }
+  .relic { width: 260px; max-width: 260px; min-height: 120px; justify-content: center; padding: 22px; }
+  .relic-name { font-size: 1.1rem; }
+  /* 대화: 본문 폭 제한하되 프레임은 넓게 */
+  .msg { font-size: 1rem; max-width: 78%; }
+  .log { padding: 20px 4px; }
+}
