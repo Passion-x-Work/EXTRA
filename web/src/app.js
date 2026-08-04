@@ -319,15 +319,15 @@ document.querySelectorAll(".relic[data-char]").forEach((b) =>
 $("turn-form").addEventListener("submit", onTurn);
 $("save-card").addEventListener("click", saveCard);
 $("retry").addEventListener("click", () => show("scr-map"));
-// 말투 스위치(정통|밈): 즉시 로그를 새 말투로 리렌더
-document.querySelectorAll("#tone-toggle .tone-opt").forEach((b) =>
-  b.addEventListener("click", () => {
-    if (tone === b.dataset.tone) return;
-    tone = b.dataset.tone;
-    document.querySelectorAll("#tone-toggle .tone-opt").forEach((x) => x.classList.toggle("active", x === b));
-    if (state) retone();
-  })
-);
+// 말투 슬라이딩 스위치(정통↔밈): 즉시 로그를 새 말투로 리렌더
+$("tone-toggle").addEventListener("click", () => {
+  tone = tone === "classic" ? "meme" : "classic";
+  const sw = $("tone-toggle"), on = tone === "meme";
+  sw.dataset.on = on ? "true" : "false";
+  sw.setAttribute("aria-checked", on ? "true" : "false");
+  sw.querySelector(".ts-cap").textContent = on ? "밈" : "정통";
+  if (state) retone();
+});
 // 난이도 선택
 document.querySelectorAll("#diff-select .diff").forEach((b) =>
   b.addEventListener("click", () => {

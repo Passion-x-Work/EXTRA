@@ -86,17 +86,20 @@ export function judgeOffline(input, character, opts = {}) {
   // 4. 통하는 가치 축
   if (pro.score > 0) {
     const axis = pro.item.axis;
-    const sources = srcOf(pro.item.근거_사료);
+    const sources = srcOf(pro.item["근거_사료"]);
     if (covered.has(axis)) {
-      // 이미 든 축을 반복 → 잘 안 통함(다른 축을 요구)
-      const remain = (V.통하는_가치 || []).filter((a) => !covered.has(a.axis)).map((a) => a.axis);
-      const hint = remain.length ? ` 그보다, ${remain[0]}은 어떠한가?` : "";
-      return makeVerdict("부분", meme ? `${name}: "${mm("neutral")}${hint}"` : `${name}: "그 이야기는 아까 들었네.${hint}"`, sources, axis, input, "offline");
+      // 이미 든 축 반복 → 안 통함(귀한 사료 대사 반복 X, 축 이름 노출 X)
+      const line = meme ? `${name}: "${mm("neutral")}"` : `${name}: "그 이야기는 아까 들었네. 다른 까닭은 없는가?"`;
+      return makeVerdict("부분", line, sources, false, axis, input, "offline");
     }
-    // 오프라인은 정합(+35)/부분(+15)까지만 — 탁월은 실 AI 판정 몫. 여러 축을 새로 쌓아야 승리.
-    const grade = pro.score >= 2 ? "정합" : "부분";
-    const line = meme ? `${name}: "${mm("praise")} ${pro.item.line}"` : `${name}: "${pro.item.line}"`;
-    return makeVerdict(grade, line, sources, false, axis, input, "offline");
+    if (pro.score >= 2) {
+      // 강한 새 축 → 정합. 사료 근거 대사 공개(축 잠금)
+      const line = meme ? `${name}: "${mm("praise")} ${pro.item.line}"` : `${name}: "${pro.item.line}"`;
+      return makeVerdict("정합", line, sources, false, axis, input, "offline");
+    }
+    // 약한 매칭 → 부분. 사료 대사는 아직 공개 X(더 깊이 요구), 축 잠그지 않음(matchedIssue null)
+    const line = meme ? `${name}: "${mm("neutral")}"` : `${name}: "그 뜻이 어렴풋이 닿네만, 좀 더 깊이 일러보게."`;
+    return makeVerdict("부분", line, [], false, null, input, "offline");
   }
 
   // 5. 매칭 없음

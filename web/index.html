@@ -57,10 +57,10 @@
                 <option value="gpt">GPT</option>
                 <option value="claude">Claude</option>
               </select>
-              <div id="tone-toggle" class="tone-switch" role="group" aria-label="말투">
-                <button class="tone-opt active" data-tone="classic">정통</button>
-                <button class="tone-opt" data-tone="meme">밈</button>
-              </div>
+              <button id="tone-toggle" class="tone-switch" data-on="false" role="switch" aria-checked="false" aria-label="말투 정통/밈">
+                <span class="ts-cap">정통</span>
+                <span class="ts-knob"></span>
+              </button>
             </div>
           </div>
           <div class="gauge"><div id="gauge-fill" class="gauge-fill"></div><span id="gauge-num">40</span></div>
