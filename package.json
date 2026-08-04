@@ -5,8 +5,10 @@
   "type": "module",
   "scripts": {
     "test": "node test/smoke.mjs",
-    "dev": "vite web",
-    "build": "vite build web"
+    "judge": "node --env-file=.env test/judge-live.mjs",
+    "dev": "vite",
+    "server": "node --env-file=.env server/index.mjs",
+    "build": "vite build"
   },
   "devDependencies": {
     "vite": "^5.4.0"

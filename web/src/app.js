@@ -61,7 +61,25 @@ function endGame() {
   show("scr-result");
 }
 
-function onTurn(e) {
+// 판정: 오프라인은 로컬, gpt/claude는 서버 프록시(/api/judge)로.
+async function getVerdict(input, mode) {
+  const provider = $("provider").value;
+  if (provider === "offline") return judgeOffline(input, character, { mode, cfg, tone });
+  try {
+    const res = await fetch("/api/judge", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ input, charId: "sejong", mode, tone, provider }),
+    });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    return await res.json();
+  } catch (err) {
+    console.warn("판정 프록시 실패 → 오프라인 폴백", err);
+    return judgeOffline(input, character, { mode, cfg, tone });
+  }
+}
+
+async function onTurn(e) {
   e.preventDefault();
   const input = $("turn-input").value.trim();
   if (!input || state.status !== "CONTINUE") return;
@@ -70,13 +88,16 @@ function onTurn(e) {
   addLine("나: " + input, "me");
 
   const mode = cfg.characters.sejong.mode || "mixed";
-  const verdict = judgeOffline(input, character, { mode, cfg, tone });
+  const btn = $("turn-form").querySelector("button");
+  btn.disabled = true;
+  const verdict = await getVerdict(input, mode);
+  btn.disabled = false;
   state = applyGrade(state, verdict, cfg, "sejong");
 
   addLine(verdict.line, "npc");
   addSources(verdict.sources);
   const tag = { 탁월: "+50", 정합: "+35", 부분: "+15", 불합치: "0", 역효과: "-20" }[verdict.grade];
-  addLine(`[${verdict.grade} ${tag}]`, "grade-tag");
+  addLine(`[${verdict.grade} ${tag}${verdict.provider && verdict.provider !== "offline" ? " · " + verdict.provider : ""}]`, "grade-tag");
   renderGauge();
 
   if (state.status !== "CONTINUE") setTimeout(endGame, 700);
