@@ -3,26 +3,10 @@
 // 게임 상태(게이지·턴·승패)는 클라이언트 engine이 소유. 서버는 판정만.
 import "./loadEnv.mjs"; // .env 를 먼저 로드(시스템 환경변수 override)
 import { createServer } from "node:http";
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
 import { judge } from "./ai/judge.js";
+import { loadCfg, loadChar } from "./data.js";
 
-const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-const readJson = (p) => JSON.parse(readFileSync(join(root, p), "utf-8"));
-const cfg = readJson("config/difficulty.json");
-const chars = {}; // 캐릭터 데이터 캐시
-function loadChar(id) {
-  if (chars[id]) return chars[id];
-  const base = `content/characters/${id}`;
-  chars[id] = {
-    profile: readJson(`${base}/profile.json`),
-    knowledge: readJson(`${base}/knowledge.json`),
-    debate: readJson(`${base}/debate.json`),
-  };
-  return chars[id];
-}
-
+const cfg = loadCfg();
 const PORT = process.env.PORT || 8787;
 
 createServer(async (req, res) => {
