@@ -121,6 +121,9 @@ button, select, input { font-family: inherit; }
 .msg.me { background: #26364f; color: #f2ede1; align-self: flex-end; border-bottom-right-radius: 3px; }
 .sources { font-size: .69rem; color: var(--muted); align-self: flex-start; padding-left: 4px; }
 .grade-tag { font-size: .72rem; font-weight: 800; letter-spacing: 1px; color: var(--accent); align-self: center; text-shadow: 0 1px 3px rgba(0,0,0,.35); }
+.msg.hint { align-self: stretch; max-width: 100%; background: #fff3d6; border: 1px dashed var(--gold); color: #5a4e30; font-family: var(--sans); font-size: .82rem; line-height: 1.5; box-shadow: 0 2px 8px rgba(0,0,0,.12); }
+.msg.hint b { color: var(--seal); }
+.hint-src { font-size: .66rem; color: #9a9078; margin-top: 5px; }
 
 .turn-form { display: flex; gap: 8px; padding: 10px 18px; margin: 0 auto; width: 100%; max-width: 760px; background: linear-gradient(180deg, transparent, rgba(0,0,0,.06)); }
 .turn-form input { flex: 1; padding: 12px 15px; border: 1.5px solid rgba(0,0,0,.14); border-radius: 12px; font-size: .95rem; background: rgba(255,252,244,.96); }

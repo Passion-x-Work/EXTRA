@@ -67,6 +67,7 @@ function startGame(id) {
   state = initState(cfg, charId);
   state.gauge = Math.max(0, Math.min(100, state.gauge + (DIFF_START[difficulty] || 0))); // 난이도 보정
   state.collected = new Set(); // 이번 판에 만난 사료 카드
+  state.hintIdx = 0; // 열어준 힌트 개수
   firstInputSaved = "";
   $("log").innerHTML = "";
   $("scr-chat").dataset.theme = charId; // 인물별 세계 배경/테마
@@ -166,8 +167,28 @@ async function onTurn(e) {
   const p = verdict.provider && verdict.provider !== "offline" ? " · " + verdict.provider : "";
   addLine(`[${verdict.grade} ${tag}${p}]`, "grade-tag");
   renderGauge();
+  maybeUnlockHint();
 
   if (state.status !== "CONTINUE") setTimeout(endGame, 700);
+}
+
+// 연속 실패 시 실제 사료 카드를 힌트로 열어준다(도감에도 수집).
+function maybeUnlockHint() {
+  if (state.status !== "CONTINUE") return;
+  const trig = cfg.hint_unlock?.trigger_fail_count || 3;
+  if ((state.consecutiveBad || 0) < trig) return;
+  const order = cfg.hint_unlock?.order?.[charId] || chars[charId].knowledge.fragments.map((f) => f.id);
+  if (state.hintIdx >= order.length) return;
+  const f = chars[charId].knowledge.fragments.find((x) => x.id === order[state.hintIdx]);
+  state.hintIdx++;
+  state.consecutiveBad = 0; // 힌트 후 카운터 리셋
+  if (!f) return;
+  state.collected.add(f.id); // 힌트로 얻은 사료도 도감에
+  const div = document.createElement("div");
+  div.className = "msg hint";
+  div.innerHTML = `<b>사료 힌트</b> · ${f.topic}<br/>${f.content}<div class="hint-src">${f.source.split("/")[0].slice(0, 44)}</div>`;
+  $("log").appendChild(div);
+  $("log").scrollTop = $("log").scrollHeight;
 }
 
 // ── 결과 공유 카드 (canvas → PNG). 숨은조건은 담지 않는다. ──

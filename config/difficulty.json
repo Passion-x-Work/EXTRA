@@ -14,7 +14,8 @@
     "miyazaki": { "status": "coming_soon", "_note": "준비중 — 비전/콜라보 슬롯, 실제 개발 X" }
   },
   "fail_conditions": {
-    "consecutive_bad_lose": 3
+    "_comment": "힌트 트리거(3)보다 커야 함 — 3회 실패 시 힌트가 먼저 뜨고(카운터 리셋), 힌트 소진 후 누적 실패로 패배",
+    "consecutive_bad_lose": 6
   },
   "hint_unlock": {
     "trigger_fail_count": 3,
