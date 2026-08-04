@@ -13,6 +13,14 @@ const ANACHRONISM = ["민주주의", "표현의 자유", "인권", "기본권", 
 const BACKFIRE = ["최고", "위대하신", "짱", "굽신", "제발", "부탁드립니다요", "돈"];
 const has = (input, list) => { const t = (input || "").toLowerCase(); return list.some((w) => t.includes(w)); };
 
+// 밈 어투 세트(오프라인 전용). 사료 인용부(rebuttal)엔 섞지 않는다 — 리액션에만.
+const MEME = {
+  praise: ["오, 그거 좀 맞는 말인데? 인정.", "와 그건 팩트네.", "말 되네 진짜."],
+  neutral: ["음~ 그건 좀 아닌 듯?", "노노, 그건 결이 다르지.", "글쎄, 와닿진 않는데?"],
+  reject: ["갑자기 그런 말은 좀… 예의 챙기시게.", "그런 수작은 안 통하네.", "어허, 선 넘네."],
+  confused: ["엥? 그게 무슨 말임? 처음 듣는데.", "그건 내 세상엔 없는 말인데?", "음? 무슨 소린지 모르겠소만."],
+};
+
 // ── 공통 판정 스키마 (등급·대사·사료·시대착오) ──────────────────────────
 const VERDICT_PROPS = {
   grade: { type: "string", enum: ["탁월", "정합", "부분", "불합치", "역효과"] },
@@ -52,17 +60,21 @@ export function judgeOffline(input, character, opts = {}) {
   const { profile, knowledge, debate } = character;
   const mode = opts.mode || debate.avoidanceMode || "mixed";
   const modeCfg = opts.cfg?.modes?.[mode] || { avoid_grade: "불합치", hidden_grade: "탁월" };
+  const meme = opts.tone === "meme";
+  const name = profile.displayName;
+  const mm = (key) => MEME[key][(input || "").length % MEME[key].length]; // 결정론적 픽
+  const say = (classic, memeKey) => `${name}: "${meme ? mm(memeKey) : classic}"`;
 
   if (has(input, ANACHRONISM))
-    return makeVerdict("불합치", `${profile.displayName}: "그게 무슨 말인고? 나는 도무지 모르겠네."`, [], true, null, input, "offline");
+    return makeVerdict("불합치", say("그게 무슨 말인고? 나는 도무지 모르겠네.", "confused"), [], true, null, input, "offline");
   if (has(input, BACKFIRE))
-    return makeVerdict("역효과", `${profile.displayName}: "그런 말로 나를 움직이려 하는가. 자중하게."`, [], false, null, input, "offline");
+    return makeVerdict("역효과", say("그런 말로 나를 움직이려 하는가. 자중하게.", "reject"), [], false, null, input, "offline");
 
   const { issue, fragments, matchScore } = retrieve(input, knowledge, debate);
   const sources = fragments.map((f) => ({ id: f.id, source: f.source, url: f.sourceUrl }));
 
   if (!issue || matchScore === 0)
-    return makeVerdict("불합치", `${profile.displayName}: "그건 내 뜻과 잘 닿지 않네. 다시 일러보게."`, [], false, null, input, "offline");
+    return makeVerdict("불합치", say("그건 내 뜻과 잘 닿지 않네. 다시 일러보게.", "neutral"), [], false, null, input, "offline");
 
   // 인물별 필드명 일반화: sejong은 sejongResponded/sejongRebuttal, 그 외는 responded/rebuttal
   const responded = issue.responded ?? issue.sejongResponded;
@@ -71,16 +83,18 @@ export function judgeOffline(input, character, opts = {}) {
   if (responded === false) {
     const strong = matchScore >= 2;
     const grade = strong ? modeCfg.hidden_grade : modeCfg.avoid_grade;
-    const line = strong
-      ? `${profile.displayName}: "…그 말은 미처 생각지 못했소. 옳은 지적이오."`
-      : (issue.playerEffect?.[mode]?.reaction || issue.playerEffect?.strict?.reaction || `${profile.displayName}: "…그 이야기는 지금은 접어두겠소."`);
+    let line;
+    if (strong) line = say("…그 말은 미처 생각지 못했소. 옳은 지적이오.", "praise");
+    else if (meme) line = `${name}: "${mm("neutral")}"`;
+    else line = issue.playerEffect?.[mode]?.reaction || issue.playerEffect?.strict?.reaction || `${name}: "…그 이야기는 지금은 접어두겠소."`;
     return makeVerdict(grade, line, sources, false, issue.id, input, "offline");
   }
 
   const grade = matchScore >= 2 ? "탁월" : "정합";
-  const line = rebuttal
-    ? `${profile.displayName}: "${rebuttal}"`
-    : `${profile.displayName}: "옳소. 그 말에 마음이 더욱 굳어지오."`;
+  // 밈 모드: 리액션(밈)은 앞에, 사료 근거(rebuttal)는 그대로 보존
+  const line = meme
+    ? `${name}: "${mm("praise")}${rebuttal ? " " + rebuttal : ""}"`
+    : `${name}: "${rebuttal || "옳소. 그 말에 마음이 더욱 굳어지오."}"`;
   return makeVerdict(grade, line, sources, false, issue.id, input, "offline");
 }
 
