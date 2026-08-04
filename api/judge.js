@@ -12,10 +12,10 @@ export default async function handler(req, res) {
     return;
   }
   try {
-    const { input, charId = "sejong", mode, tone, provider } = req.body || {};
+    const { input, charId = "sejong", mode, tone, provider, covered } = req.body || {};
     const character = loadChar(charId);
     const useMode = mode || cfg.characters[charId]?.mode || "mixed";
-    const verdict = await judge(input, character, { provider, mode: useMode, tone, cfg });
+    const verdict = await judge(input, character, { provider, mode: useMode, tone, cfg, covered });
     res.status(200).json(verdict);
   } catch (e) {
     res.status(500).json({ error: String(e) });

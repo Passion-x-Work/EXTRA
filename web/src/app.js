@@ -67,6 +67,7 @@ function startGame(id) {
   state = initState(cfg, charId);
   state.gauge = Math.max(0, Math.min(100, state.gauge + (DIFF_START[difficulty] || 0))); // 난이도 보정
   state.collected = new Set(); // 이번 판에 만난 사료 카드
+  state.coveredAxes = new Set(); // 이번 판에 커버한 가치 축(설득 깊이)
   state.hintIdx = 0; // 열어준 힌트 개수
   firstInputSaved = "";
   $("log").innerHTML = "";
@@ -130,18 +131,19 @@ function renderDogam() {
 
 async function getVerdict(input, mode) {
   const provider = $("provider").value;
-  if (provider === "offline") return judgeOffline(input, character(), { mode, cfg, tone });
+  const covered = [...state.coveredAxes];
+  if (provider === "offline") return judgeOffline(input, character(), { mode, cfg, tone, covered });
   try {
     const res = await fetch("/api/judge", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ input, charId, mode, tone, provider }),
+      body: JSON.stringify({ input, charId, mode, tone, provider, covered }),
     });
     if (!res.ok) throw new Error("HTTP " + res.status);
     return await res.json();
   } catch (err) {
     console.warn("판정 프록시 실패 → 오프라인 폴백", err);
-    return judgeOffline(input, character(), { mode, cfg, tone });
+    return judgeOffline(input, character(), { mode, cfg, tone, covered });
   }
 }
 
@@ -160,6 +162,8 @@ async function onTurn(e) {
   btn.disabled = false;
   state = applyGrade(state, verdict, cfg, charId);
   (verdict.sources || []).forEach((s) => state.collected.add(s.id)); // 만난 사료 수집
+  if (verdict.matchedIssue && (verdict.grade === "탁월" || verdict.grade === "정합"))
+    state.coveredAxes.add(verdict.matchedIssue); // 새로 커버한 가치 축
 
   addLine(verdict.line, "npc");
   addSources(verdict.sources);

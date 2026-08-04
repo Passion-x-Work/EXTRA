@@ -57,45 +57,50 @@ function buildSystemPrompt(profile, fragments, mode, tone) {
 
 // ── 오프라인(휴리스틱) ────────────────────────────────────────────────
 export function judgeOffline(input, character, opts = {}) {
-  const { profile, knowledge, debate } = character;
-  const mode = opts.mode || debate.avoidanceMode || "mixed";
-  const modeCfg = opts.cfg?.modes?.[mode] || { avoid_grade: "불합치", hidden_grade: "탁월" };
+  const { profile, knowledge } = character;
   const meme = opts.tone === "meme";
   const name = profile.displayName;
-  const mm = (key) => MEME[key][(input || "").length % MEME[key].length]; // 결정론적 픽
+  const V = profile.values || {};
+  const covered = new Set(opts.covered || []); // 이번 판에 이미 커버한 가치 축
+  const mm = (key) => MEME[key][(input || "").length % MEME[key].length];
   const say = (classic, memeKey) => `${name}: "${meme ? mm(memeKey) : classic}"`;
+  const score = (kws) => (kws || []).reduce((s, k) => s + (input.includes(k) ? 1 : 0), 0);
+  const best = (list) => (list || []).reduce((b, it) => { const s = score(it.keywords); return s > b.score ? { item: it, score: s } : b; }, { item: null, score: 0 });
+  const srcOf = (ids) => (ids || []).map((id) => { const f = knowledge.fragments.find((x) => x.id === id); return f ? { id: f.id, source: f.source, url: f.sourceUrl } : { id }; });
 
-  if (has(input, ANACHRONISM))
+  // 1. 시대착오
+  if ((V.시대착오 || ANACHRONISM).some((w) => input.includes(w)))
     return makeVerdict("불합치", say("그게 무슨 말인고? 나는 도무지 모르겠네.", "confused"), [], true, null, input, "offline");
-  if (has(input, BACKFIRE))
-    return makeVerdict("역효과", say("그런 말로 나를 움직이려 하는가. 자중하게.", "reject"), [], false, null, input, "offline");
 
-  const { issue, fragments, matchScore } = retrieve(input, knowledge, debate);
-  const sources = fragments.map((f) => ({ id: f.id, source: f.source, url: f.sourceUrl }));
+  // 2. 역효과 (아첨·돈 회유 등)
+  const bad = best(V.역효과);
+  const pro = best(V.통하는_가치);
+  const anti = best(V.안_통하는_것);
+  if (bad.score > 0 && bad.score >= pro.score)
+    return makeVerdict("역효과", meme ? `${name}: "${mm("reject")}"` : `${name}: "${bad.item.line}"`, [], false, null, input, "offline");
 
-  if (!issue || matchScore === 0)
-    return makeVerdict("불합치", say("그건 내 뜻과 잘 닿지 않네. 다시 일러보게.", "neutral"), [], false, null, input, "offline");
+  // 3. 안 통하는 축이 통하는 축보다 강하면 불합치
+  if (anti.score > 0 && anti.score >= pro.score)
+    return makeVerdict("불합치", meme ? `${name}: "${mm("neutral")}"` : `${name}: "${anti.item.line}"`, [], false, anti.item.axis, input, "offline");
 
-  // 인물별 필드명 일반화: sejong은 sejongResponded/sejongRebuttal, 그 외는 responded/rebuttal
-  const responded = issue.responded ?? issue.sejongResponded;
-  const rebuttal = issue.rebuttal ?? issue.sejongRebuttal;
-
-  if (responded === false) {
-    const strong = matchScore >= 2;
-    const grade = strong ? modeCfg.hidden_grade : modeCfg.avoid_grade;
-    let line;
-    if (strong) line = say("…그 말은 미처 생각지 못했소. 옳은 지적이오.", "praise");
-    else if (meme) line = `${name}: "${mm("neutral")}"`;
-    else line = issue.playerEffect?.[mode]?.reaction || issue.playerEffect?.strict?.reaction || `${name}: "…그 이야기는 지금은 접어두겠소."`;
-    return makeVerdict(grade, line, sources, false, issue.id, input, "offline");
+  // 4. 통하는 가치 축
+  if (pro.score > 0) {
+    const axis = pro.item.axis;
+    const sources = srcOf(pro.item.근거_사료);
+    if (covered.has(axis)) {
+      // 이미 든 축을 반복 → 잘 안 통함(다른 축을 요구)
+      const remain = (V.통하는_가치 || []).filter((a) => !covered.has(a.axis)).map((a) => a.axis);
+      const hint = remain.length ? ` 그보다, ${remain[0]}은 어떠한가?` : "";
+      return makeVerdict("부분", meme ? `${name}: "${mm("neutral")}${hint}"` : `${name}: "그 이야기는 아까 들었네.${hint}"`, sources, axis, input, "offline");
+    }
+    // 오프라인은 정합(+35)/부분(+15)까지만 — 탁월은 실 AI 판정 몫. 여러 축을 새로 쌓아야 승리.
+    const grade = pro.score >= 2 ? "정합" : "부분";
+    const line = meme ? `${name}: "${mm("praise")} ${pro.item.line}"` : `${name}: "${pro.item.line}"`;
+    return makeVerdict(grade, line, sources, false, axis, input, "offline");
   }
 
-  const grade = matchScore >= 2 ? "탁월" : "정합";
-  // 밈 모드: 리액션(밈)은 앞에, 사료 근거(rebuttal)는 그대로 보존
-  const line = meme
-    ? `${name}: "${mm("praise")}${rebuttal ? " " + rebuttal : ""}"`
-    : `${name}: "${rebuttal || "옳소. 그 말에 마음이 더욱 굳어지오."}"`;
-  return makeVerdict(grade, line, sources, false, issue.id, input, "offline");
+  // 5. 매칭 없음
+  return makeVerdict("불합치", say("그건 내 뜻과 잘 닿지 않네. 다시 일러보게.", "neutral"), [], false, null, input, "offline");
 }
 
 // ── OpenAI (GPT) ─────────────────────────────────────────────────────

@@ -19,10 +19,10 @@ createServer(async (req, res) => {
     req.on("data", (c) => (raw += c));
     req.on("end", async () => {
       try {
-        const { input, charId = "sejong", mode, tone, provider } = JSON.parse(raw || "{}");
+        const { input, charId = "sejong", mode, tone, provider, covered } = JSON.parse(raw || "{}");
         const character = loadChar(charId);
         const useMode = mode || cfg.characters[charId]?.mode || "mixed";
-        const verdict = await judge(input, character, { provider, mode: useMode, tone, cfg });
+        const verdict = await judge(input, character, { provider, mode: useMode, tone, cfg, covered });
         res.writeHead(200, { "content-type": "application/json" });
         res.end(JSON.stringify(verdict));
       } catch (e) {
