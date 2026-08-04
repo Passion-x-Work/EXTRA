@@ -117,7 +117,8 @@ button, select, input { font-family: inherit; }
 .gauge span { position: absolute; right: 7px; top: -1px; font-size: .62rem; font-weight: 800; color: #fff; mix-blend-mode: difference; }
 .ctl { border: 1px solid rgba(0,0,0,.15); background: rgba(255,251,240,.92); border-radius: 8px; padding: 5px 9px; font-size: .78rem; cursor: pointer; color: var(--ink); }
 
-.log { flex: 1; min-height: 0; overflow-y: auto; padding: 8px 18px 4px; display: flex; flex-direction: column; gap: 11px; margin: 0 auto; width: 100%; max-width: 760px; }
+/* 스크롤바가 프레임 끝에 붙도록 로그는 풀폭, 메시지 열만 가운데 760으로 */
+.log { flex: 1; min-height: 0; overflow-y: auto; padding: 8px max(18px, calc((100% - 760px) / 2)) 4px; display: flex; flex-direction: column; gap: 11px; width: 100%; }
 .msg { padding: 11px 14px; border-radius: 13px; max-width: 86%; line-height: 1.6; font-size: .93rem; white-space: pre-wrap; box-shadow: 0 3px 10px rgba(0,0,0,.16); }
 .msg.npc { font-family: var(--serif); background: #fdf6e6; color: #2a2419; border: 1px solid #e4d7b6; align-self: flex-start; border-bottom-left-radius: 3px; }
 .msg.me { background: #26364f; color: #f2ede1; align-self: flex-end; border-bottom-right-radius: 3px; }
@@ -203,7 +204,6 @@ button, select, input { font-family: inherit; }
   .relics { flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 20px; max-width: 900px; }
   .relic { width: 262px; max-width: 262px; min-height: 128px; justify-content: center; }
   .relic-name { font-size: 1.28rem; }
-  .chat-head, .log, .turn-form { padding-left: 44px; padding-right: 44px; }
   .msg { font-size: 1rem; max-width: 74%; }
 }
 
