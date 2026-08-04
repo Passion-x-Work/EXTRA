@@ -13,8 +13,21 @@ for (const [path, mod] of Object.entries(modules)) {
 }
 
 const DIFF_KO = { tutorial: "튜토리얼", standard: "표준", hard: "고난도" };
+// 플레이어 난이도(이지/미디움/하드) → 회피 모드 + 시작 게이지 보정
+const DIFF_MODE = { easy: "reward", mid: "mixed", hard: "strict" };
+const DIFF_START = { easy: 15, mid: 0, hard: -8 };
 const $ = (id) => document.getElementById(id);
-let state, charId, tone = "classic", firstInputSaved = "";
+let state, charId, tone = "classic", firstInputSaved = "", difficulty = "mid";
+
+// ── 사료 도감(localStorage) ──
+const DOGAM_KEY = "extra_dogam_v1";
+const loadDogam = () => { try { return JSON.parse(localStorage.getItem(DOGAM_KEY)) || {}; } catch (_) { return {}; } };
+function addToDogam(cid, ids) {
+  const d = loadDogam(); const set = new Set(d[cid] || []);
+  ids.forEach((i) => set.add(i)); d[cid] = [...set];
+  localStorage.setItem(DOGAM_KEY, JSON.stringify(d));
+}
+const fragTopic = (cid, id) => chars[cid]?.knowledge.fragments.find((f) => f.id === id)?.topic || id;
 
 const character = () => {
   const c = chars[charId];
@@ -52,6 +65,8 @@ function startGame(id) {
   charId = id;
   const { profile, scenario } = chars[charId];
   state = initState(cfg, charId);
+  state.gauge = Math.max(0, Math.min(100, state.gauge + (DIFF_START[difficulty] || 0))); // 난이도 보정
+  state.collected = new Set(); // 이번 판에 만난 사료 카드
   firstInputSaved = "";
   $("log").innerHTML = "";
   $("scr-chat").dataset.theme = charId; // 인물별 세계 배경/테마
@@ -74,10 +89,42 @@ function endGame() {
   $("result-grade").textContent = won ? resultBand(state.turn, cfg) : "—";
   const note = won ? scn.winScene?.historicalNote : scn.loseScene?.historicalNote;
   $("result-cta").textContent = note || "";
+
+  // 승리 보상: 이번 판에 만난 사료 카드를 도감에 수집
+  const rc = $("result-cards");
+  if (won) {
+    const prev = new Set(loadDogam()[charId] || []);
+    const got = [...(state.collected || [])];
+    const fresh = got.filter((id) => !prev.has(id));
+    addToDogam(charId, got);
+    rc.innerHTML = fresh.length
+      ? `<div class="rc-title">사료 카드 ${fresh.length}장 획득</div>` +
+        fresh.map((id) => `<span class="rc-chip">${fragTopic(charId, id)}</span>`).join("")
+      : `<div class="rc-title muted">이미 모은 사료였습니다</div>`;
+  } else rc.innerHTML = "";
+
   show("scr-result");
   const seal = $("win-seal");
   seal.classList.remove("stamped");
   if (won) requestAnimationFrame(() => seal.classList.add("stamped")); // 낙관 쾅
+}
+
+// ── 사료 도감 렌더 ──
+function renderDogam() {
+  const d = loadDogam();
+  const el = $("dogam-list");
+  const entries = Object.entries(d).filter(([, ids]) => ids && ids.length);
+  if (!entries.length) {
+    el.innerHTML = `<p class="dogam-empty">아직 모은 사료가 없어요.<br />인물을 설득해 사료 카드를 모아보세요.</p>`;
+    return;
+  }
+  el.innerHTML = entries.map(([cid, ids]) => {
+    const ch = chars[cid]; if (!ch) return "";
+    const cards = ids.map((id) => ch.knowledge.fragments.find((f) => f.id === id)).filter(Boolean);
+    return `<div class="dogam-group"><h3>${ch.profile.displayName} · ${cards.length}장</h3>` +
+      cards.map((f) => `<div class="dogam-card"><div class="dc-topic">${f.topic}</div><div class="dc-content">${f.content}</div><div class="dc-src">${f.source.split("/")[0].slice(0, 46)}</div></div>`).join("") +
+      `</div>`;
+  }).join("");
 }
 
 async function getVerdict(input, mode) {
@@ -105,12 +152,13 @@ async function onTurn(e) {
   $("turn-input").value = "";
   addLine("나: " + input, "me");
 
-  const mode = cfg.characters[charId]?.mode || "mixed";
+  const mode = DIFF_MODE[difficulty] || "mixed";
   const btn = $("turn-form").querySelector("button");
   btn.disabled = true;
   const verdict = await getVerdict(input, mode);
   btn.disabled = false;
   state = applyGrade(state, verdict, cfg, charId);
+  (verdict.sources || []).forEach((s) => state.collected.add(s.id)); // 만난 사료 수집
 
   addLine(verdict.line, "npc");
   addSources(verdict.sources);
@@ -205,3 +253,13 @@ $("tone-toggle").addEventListener("click", () => {
   tone = tone === "classic" ? "meme" : "classic";
   $("tone-toggle").textContent = tone === "classic" ? "정통" : "밈";
 });
+// 난이도 선택
+document.querySelectorAll("#diff-select .diff").forEach((b) =>
+  b.addEventListener("click", () => {
+    difficulty = b.dataset.diff;
+    document.querySelectorAll("#diff-select .diff").forEach((x) => x.classList.toggle("active", x === b));
+  })
+);
+// 사료 도감
+$("open-dogam").addEventListener("click", () => { renderDogam(); show("scr-dogam"); });
+$("close-dogam").addEventListener("click", () => show("scr-map"));

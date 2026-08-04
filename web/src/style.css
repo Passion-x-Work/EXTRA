@@ -156,6 +156,33 @@ button, select, input { font-family: inherit; }
 .retry { padding: 12px 26px; border: none; border-radius: 11px; background: var(--ink); color: var(--hanji); font-size: 1rem; cursor: pointer; font-family: var(--serif); }
 .retry--alt { background: transparent; color: var(--ink); border: 1.5px solid var(--gold); }
 
+/* 난이도 선택 · 도감 버튼(지도) */
+.map-foot { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-top: 10px; }
+.diff-select { display: flex; align-items: center; gap: 6px; background: #fff8ea; border: 1px solid var(--line); border-radius: 12px; padding: 5px 8px; }
+.diff-label { font-size: .72rem; color: var(--gold); font-weight: 700; padding: 0 4px; }
+.diff { border: none; background: transparent; padding: 6px 13px; border-radius: 8px; font-size: .84rem; cursor: pointer; color: var(--ink-soft); }
+.diff.active { background: var(--seal); color: #fff; font-weight: 700; }
+.ghost-btn { background: transparent; border: 1px solid var(--line); border-radius: 10px; padding: 8px 16px; font-size: .82rem; cursor: pointer; color: var(--ink-soft); }
+.ghost-btn:hover { border-color: var(--gold); color: var(--ink); }
+
+/* 결과: 획득 사료 카드 */
+.result-cards { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.rc-title { width: 100%; font-size: .8rem; font-weight: 700; color: var(--gold); margin-bottom: 2px; }
+.rc-title.muted { color: #9a9078; font-weight: 500; }
+.rc-chip { font-size: .72rem; background: #fff3d8; border: 1px solid var(--line); color: var(--ink-soft); padding: 3px 9px; border-radius: 20px; }
+
+/* 사료 도감 화면 */
+#scr-dogam { background: radial-gradient(110% 80% at 50% 15%, #efe6cf, #ddcda6); }
+.dogam-head { display: flex; align-items: center; justify-content: space-between; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+.dogam-head h2 { font-family: var(--serif); color: var(--ink); }
+.dogam-list { flex: 1; overflow-y: auto; padding-top: 14px; display: flex; flex-direction: column; gap: 16px; }
+.dogam-empty { text-align: center; color: var(--ink-soft); margin-top: 46px; line-height: 1.8; }
+.dogam-group h3 { font-family: var(--serif); font-size: 1rem; color: var(--seal); margin-bottom: 8px; }
+.dogam-card { background: #fdf6e6; border: 1px solid var(--line); border-left: 3px solid var(--gold); border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; }
+.dc-topic { font-family: var(--serif); font-weight: 700; font-size: .92rem; color: var(--ink); }
+.dc-content { font-size: .82rem; color: var(--ink-soft); line-height: 1.5; margin: 4px 0; }
+.dc-src { font-size: .68rem; color: #9a9078; }
+
 /* ══════════ 데스크톱: 중앙 문서 프레임 ══════════ */
 @media (min-width: 760px) {
   body { padding: 30px; }

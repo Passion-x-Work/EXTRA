@@ -35,6 +35,15 @@
             <span class="relic-sub">준비 중</span>
           </button>
         </div>
+        <div class="map-foot">
+          <div class="diff-select" id="diff-select">
+            <span class="diff-label">난이도</span>
+            <button class="diff" data-diff="easy">이지</button>
+            <button class="diff active" data-diff="mid">미디움</button>
+            <button class="diff" data-diff="hard">하드</button>
+          </div>
+          <button id="open-dogam" class="ghost-btn">사료 도감</button>
+        </div>
       </section>
 
       <!-- 화면 2: 대화 -->
@@ -65,11 +74,21 @@
           <div id="result-line" class="card-line"></div>
           <div class="card-meta"><span id="result-turns"></span><span id="result-grade" class="grade"></span></div>
           <div id="result-cta" class="card-cta"></div>
+          <div id="result-cards" class="result-cards"></div>
         </div>
         <div class="result-actions">
           <button id="save-card" class="retry retry--alt">카드 저장</button>
           <button id="retry" class="retry">다시 도전</button>
         </div>
+      </section>
+
+      <!-- 사료 도감 -->
+      <section id="scr-dogam" class="screen">
+        <header class="dogam-head">
+          <h2>사료 도감</h2>
+          <button id="close-dogam" class="ctl">닫기</button>
+        </header>
+        <div id="dogam-list" class="dogam-list"></div>
       </section>
     </div>
     <script type="module" src="./src/app.js"></script>
