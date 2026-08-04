@@ -79,6 +79,7 @@ function startGame(id) {
   state.collected = new Set(); // 이번 판에 만난 사료 카드
   state.coveredAxes = new Set(); // 이번 판에 커버한 가치 축(설득 깊이)
   state.hintIdx = 0; // 열어준 힌트 개수
+  state.turnLog = []; // 톤 전환 시 리렌더용 기록
   firstInputSaved = "";
   $("log").innerHTML = "";
   $("scr-chat").dataset.theme = charId; // 인물별 세계 배경/테마
@@ -176,16 +177,51 @@ async function onTurn(e) {
   if (verdict.matchedIssue && (verdict.grade === "탁월" || verdict.grade === "정합"))
     state.coveredAxes.add(verdict.matchedIssue); // 새로 커버한 가치 축
 
-  addLine(verdict.line, "npc");
-  addSources(verdict.sources);
-  const tag = { 탁월: "+50", 정합: "+35", 부분: "+15", 불합치: "0", 역효과: "-20" }[verdict.grade];
-  const p = verdict.provider && verdict.provider !== "offline" ? " · " + verdict.provider : "";
-  addLine(`[${verdict.grade} ${tag}${p}]`, "grade-tag");
+  state.turnLog.push({ type: "turn", input, verdict });
+  renderVerdict(verdict);
   renderGauge();
   renderAxisTrack();
   maybeUnlockHint();
 
   if (state.status !== "CONTINUE") setTimeout(endGame, 700);
+}
+
+// 판정 결과(대사+출처+등급) 렌더
+function renderVerdict(v) {
+  addLine(v.line, "npc");
+  addSources(v.sources);
+  const tag = { 탁월: "+50", 정합: "+35", 부분: "+15", 불합치: "0", 역효과: "-20" }[v.grade];
+  const p = v.provider && v.provider !== "offline" ? " · " + v.provider : "";
+  addLine(`[${v.grade} ${tag}${p}]`, "grade-tag");
+}
+
+// 사료 힌트 카드
+function addHintCard(f) {
+  if (!f) return;
+  const div = document.createElement("div");
+  div.className = "msg hint";
+  div.innerHTML = `<b>사료 힌트</b> · ${f.topic}<br/>${f.content}<div class="hint-src">${f.source.split("/")[0].slice(0, 44)}</div>`;
+  $("log").appendChild(div);
+  $("log").scrollTop = $("log").scrollHeight;
+}
+
+// 톤 전환 시 로그 전체를 새 말투로 리렌더(오프라인 대사는 그 자리에서 재판정, 사료 근거 유지)
+function retone() {
+  if (!state || !state.turnLog) return;
+  const { scenario } = chars[charId];
+  $("log").innerHTML = "";
+  addLine(scenario.openingLines?.[tone] || scenario.openingLines?.classic || "…", "npc");
+  const covered = new Set();
+  const mode = DIFF_MODE[difficulty] || "mixed";
+  for (const e of state.turnLog) {
+    if (e.type === "hint") { addHintCard(chars[charId].knowledge.fragments.find((f) => f.id === e.fragId)); continue; }
+    addLine("나: " + e.input, "me");
+    const v = e.verdict.provider === "offline"
+      ? judgeOffline(e.input, character(), { mode, cfg, tone, covered: [...covered] })
+      : e.verdict; // 실 AI 대사는 재생성 불가 → 원본 유지
+    renderVerdict(v);
+    if (v.matchedIssue && (v.grade === "탁월" || v.grade === "정합")) covered.add(v.matchedIssue);
+  }
 }
 
 // 연속 실패 시 실제 사료 카드를 힌트로 열어준다(도감에도 수집).
@@ -200,11 +236,8 @@ function maybeUnlockHint() {
   state.consecutiveBad = 0; // 힌트 후 카운터 리셋
   if (!f) return;
   state.collected.add(f.id); // 힌트로 얻은 사료도 도감에
-  const div = document.createElement("div");
-  div.className = "msg hint";
-  div.innerHTML = `<b>사료 힌트</b> · ${f.topic}<br/>${f.content}<div class="hint-src">${f.source.split("/")[0].slice(0, 44)}</div>`;
-  $("log").appendChild(div);
-  $("log").scrollTop = $("log").scrollHeight;
+  state.turnLog.push({ type: "hint", fragId: f.id });
+  addHintCard(f);
 }
 
 // ── 결과 공유 카드 (canvas → PNG). 숨은조건은 담지 않는다. ──
@@ -286,10 +319,15 @@ document.querySelectorAll(".relic[data-char]").forEach((b) =>
 $("turn-form").addEventListener("submit", onTurn);
 $("save-card").addEventListener("click", saveCard);
 $("retry").addEventListener("click", () => show("scr-map"));
-$("tone-toggle").addEventListener("click", () => {
-  tone = tone === "classic" ? "meme" : "classic";
-  $("tone-toggle").textContent = tone === "classic" ? "정통" : "밈";
-});
+// 말투 스위치(정통|밈): 즉시 로그를 새 말투로 리렌더
+document.querySelectorAll("#tone-toggle .tone-opt").forEach((b) =>
+  b.addEventListener("click", () => {
+    if (tone === b.dataset.tone) return;
+    tone = b.dataset.tone;
+    document.querySelectorAll("#tone-toggle .tone-opt").forEach((x) => x.classList.toggle("active", x === b));
+    if (state) retone();
+  })
+);
 // 난이도 선택
 document.querySelectorAll("#diff-select .diff").forEach((b) =>
   b.addEventListener("click", () => {
