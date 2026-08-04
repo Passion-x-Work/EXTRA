@@ -19,7 +19,10 @@
   },
   "hint_unlock": {
     "trigger_fail_count": 3,
-    "order": { "sejong": ["sejong-002", "sejong-004", "sejong-003"] }
+    "order": {
+      "sejong": ["sejong-002", "sejong-004", "sejong-003"],
+      "vangogh": ["vangogh-003", "vangogh-006", "vangogh-004"]
+    }
   },
   "result_grade_bands": {
     "_desc": "걸린 턴 수 기준 결과 등급(남은 게이지·사료 강도로 보정 가능)",
