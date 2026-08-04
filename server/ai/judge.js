@@ -13,12 +13,20 @@ const ANACHRONISM = ["민주주의", "표현의 자유", "인권", "기본권", 
 const BACKFIRE = ["최고", "위대하신", "짱", "굽신", "제발", "부탁드립니다요", "돈"];
 const has = (input, list) => { const t = (input || "").toLowerCase(); return list.some((w) => t.includes(w)); };
 
-// 밈 어투 세트(오프라인 전용). 사료 인용부(rebuttal)엔 섞지 않는다 — 리액션에만.
+// 오프라인 리액션 대사 풀(입력 해시로 다양화). 사료 인용부엔 섞지 않는다 — 리액션에만.
 const MEME = {
-  praise: ["오, 그거 좀 맞는 말인데? 인정.", "와 그건 팩트네.", "말 되네 진짜."],
-  neutral: ["음~ 그건 좀 아닌 듯?", "노노, 그건 결이 다르지.", "글쎄, 와닿진 않는데?"],
+  praise: ["오, 그거 좀 맞는 말인데? 인정.", "와 그건 팩트네.", "말 되네 진짜.", "오 이건 좀 설득력 있는데?", "음 그 포인트 좋다."],
+  neutral: ["음~ 그건 좀 아닌 듯?", "노노, 그건 결이 다르지.", "글쎄, 와닿진 않는데?", "흠… 그걸론 좀 약한데?", "그게 핵심은 아닌 것 같은데?"],
+  weak: ["오 방향은 맞는데 좀 더 풀어봐.", "느낌은 오는데 근거가 약해. 더 말해봐.", "그래서? 좀 더 구체적으로."],
+  repeat: ["그건 아까 들었잖아 ㅋㅋ 다른 건?", "또 그 얘기? 새로운 각도로 가보자.", "그 말은 이미 접수함. 다른 이유는?"],
   reject: ["갑자기 그런 말은 좀… 예의 챙기시게.", "그런 수작은 안 통하네.", "어허, 선 넘네."],
   confused: ["엥? 그게 무슨 말임? 처음 듣는데.", "그건 내 세상엔 없는 말인데?", "음? 무슨 소린지 모르겠소만."],
+};
+// 정통(사극체) 리액션 풀
+const CLASSIC = {
+  neutral: ["그건 내 뜻과 잘 닿지 않네. 다시 일러보게.", "흠, 그 말로는 나를 움직이기 어렵네.", "무슨 뜻인지 좀 더 소상히 일러보게.", "그 말이 과인의 마음엔 미치지 못하는구나."],
+  weak: ["그 뜻이 어렴풋이 닿네만, 좀 더 깊이 일러보게.", "말의 뜻은 알겠으나, 무엇을 위함인지 밝히게.", "조금 더 그 까닭을 소상히 말해보게."],
+  repeat: ["그 이야기는 아까 들었네. 다른 까닭은 없는가?", "그 말은 이미 들었네. 또 다른 이유가 있는가?", "그 뜻은 알겠네. 헌데 다른 근거는 없는가?"],
 };
 
 // ── 공통 판정 스키마 (등급·대사·사료·시대착오) ──────────────────────────
@@ -62,48 +70,43 @@ export function judgeOffline(input, character, opts = {}) {
   const name = profile.displayName;
   const V = profile.values || {};
   const covered = new Set(opts.covered || []); // 이번 판에 이미 커버한 가치 축
-  const mm = (key) => MEME[key][(input || "").length % MEME[key].length];
-  const say = (classic, memeKey) => `${name}: "${meme ? mm(memeKey) : classic}"`;
+  const hash = [...(input || "")].reduce((a, c) => a + c.charCodeAt(0), 0); // 입력 내용 기반 결정론적 픽(길이 아님)
+  const pick = (arr) => (arr && arr.length ? arr[hash % arr.length] : "");
+  const react = (cat) => `${name}: "${pick(meme ? (MEME[cat] || MEME.neutral) : (CLASSIC[cat] || CLASSIC.neutral))}"`;
   const score = (kws) => (kws || []).reduce((s, k) => s + (input.includes(k) ? 1 : 0), 0);
   const best = (list) => (list || []).reduce((b, it) => { const s = score(it.keywords); return s > b.score ? { item: it, score: s } : b; }, { item: null, score: 0 });
   const srcOf = (ids) => (ids || []).map((id) => { const f = knowledge.fragments.find((x) => x.id === id); return f ? { id: f.id, source: f.source, url: f.sourceUrl } : { id }; });
 
   // 1. 시대착오
   if ((V.시대착오 || ANACHRONISM).some((w) => input.includes(w)))
-    return makeVerdict("불합치", say("그게 무슨 말인고? 나는 도무지 모르겠네.", "confused"), [], true, null, input, "offline");
+    return makeVerdict("불합치", react("confused"), [], true, null, input, "offline");
 
   // 2. 역효과 (아첨·돈 회유 등)
   const bad = best(V.역효과);
   const pro = best(V.통하는_가치);
   const anti = best(V.안_통하는_것);
   if (bad.score > 0 && bad.score >= pro.score)
-    return makeVerdict("역효과", meme ? `${name}: "${mm("reject")}"` : `${name}: "${bad.item.line}"`, [], false, null, input, "offline");
+    return makeVerdict("역효과", meme ? react("reject") : `${name}: "${bad.item.line}"`, [], false, null, input, "offline");
 
   // 3. 안 통하는 축이 통하는 축보다 강하면 불합치
   if (anti.score > 0 && anti.score >= pro.score)
-    return makeVerdict("불합치", meme ? `${name}: "${mm("neutral")}"` : `${name}: "${anti.item.line}"`, [], false, anti.item.axis, input, "offline");
+    return makeVerdict("불합치", meme ? react("neutral") : `${name}: "${anti.item.line}"`, [], false, anti.item.axis, input, "offline");
 
   // 4. 통하는 가치 축
   if (pro.score > 0) {
     const axis = pro.item.axis;
     const sources = srcOf(pro.item["근거_사료"]);
-    if (covered.has(axis)) {
-      // 이미 든 축 반복 → 안 통함(귀한 사료 대사 반복 X, 축 이름 노출 X)
-      const line = meme ? `${name}: "${mm("neutral")}"` : `${name}: "그 이야기는 아까 들었네. 다른 까닭은 없는가?"`;
-      return makeVerdict("부분", line, sources, false, axis, input, "offline");
-    }
-    if (pro.score >= 2) {
-      // 강한 새 축 → 정합. 사료 근거 대사 공개(축 잠금)
-      const line = meme ? `${name}: "${mm("praise")} ${pro.item.line}"` : `${name}: "${pro.item.line}"`;
+    if (covered.has(axis)) // 반복 → 다양한 '이미 들었네'(귀한 사료 대사 반복 X)
+      return makeVerdict("부분", react("repeat"), sources, false, axis, input, "offline");
+    if (pro.score >= 2) { // 강한 새 축 → 정합, 사료 근거 대사 공개(축 잠금)
+      const line = meme ? `${name}: "${pick(MEME.praise)} ${pro.item.line}"` : `${name}: "${pro.item.line}"`;
       return makeVerdict("정합", line, sources, false, axis, input, "offline");
     }
-    // 약한 매칭 → 부분. 사료 대사는 아직 공개 X(더 깊이 요구), 축 잠그지 않음(matchedIssue null)
-    const line = meme ? `${name}: "${mm("neutral")}"` : `${name}: "그 뜻이 어렴풋이 닿네만, 좀 더 깊이 일러보게."`;
-    return makeVerdict("부분", line, [], false, null, input, "offline");
+    return makeVerdict("부분", react("weak"), [], false, null, input, "offline"); // 약한 매칭 → 더 깊이 요구
   }
 
   // 5. 매칭 없음
-  return makeVerdict("불합치", say("그건 내 뜻과 잘 닿지 않네. 다시 일러보게.", "neutral"), [], false, null, input, "offline");
+  return makeVerdict("불합치", react("neutral"), [], false, null, input, "offline");
 }
 
 // ── OpenAI (GPT) ─────────────────────────────────────────────────────
