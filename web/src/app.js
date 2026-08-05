@@ -45,6 +45,17 @@ function renderGauge() {
   $("turn-count").textContent = "턴 " + state.turn;
 }
 
+// 신념 게이지 → 인물 단계(Phase 1~5). 설득될수록 표정/자세가 바뀜.
+const phaseFromGauge = (g) => Math.max(1, Math.min(5, Math.ceil((g || 0) / 20) || 1));
+function updateScene() {
+  const sc = $("scr-chat");
+  let img = null;
+  if (charId === "sejong") img = `/Assets/Sejong/Phase0${phaseFromGauge(state.gauge)}.png`;
+  else if (charId === "vangogh") img = `/Assets/gogh/BG02_night.png`;
+  if (img) sc.style.setProperty("--scene-image", `url("${img}")`);
+  else sc.style.removeProperty("--scene-image");
+}
+
 // 설득의 축 진행 표시: 찾기 전엔 이름 가림(숨은조건 추리 유지), 커버하면 공개
 function renderAxisTrack() {
   const axes = chars[charId]?.profile?.values?.["통하는_가치"] || [];
@@ -89,6 +100,7 @@ function startGame(id) {
   $("turn-input").placeholder = `${profile.displayName}에게 건넬 논거를 입력…`;
   renderGauge();
   renderAxisTrack();
+  updateScene();
   addLine(scenario.openingLines?.[tone] || scenario.openingLines?.classic || "…", "npc");
   show("scr-chat");
   $("turn-input").focus();
@@ -181,6 +193,7 @@ async function onTurn(e) {
   renderVerdict(verdict);
   renderGauge();
   renderAxisTrack();
+  updateScene();
   maybeUnlockHint();
 
   if (state.status !== "CONTINUE") setTimeout(endGame, 700);

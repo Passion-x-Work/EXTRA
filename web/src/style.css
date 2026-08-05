@@ -72,8 +72,8 @@ button, select, input { font-family: inherit; }
 /* 인물별 세계 배경: 블러 + 반투명 베일로 흐리게 → 대사 가독성 확보 */
 #scr-chat[data-theme]::before {
   content: ""; position: absolute; inset: -14px; z-index: 0;
-  background: var(--scene-image, none) center/cover no-repeat, var(--scene-fallback);
-  filter: blur(5px); transform: scale(1.05); opacity: .9;
+  background: var(--scene-image, none) var(--scene-pos, center) / cover no-repeat, var(--scene-fallback);
+  filter: blur(var(--scene-blur, 5px)); transform: scale(1.05); opacity: .92;
 }
 #scr-chat[data-theme]::after {
   content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
@@ -83,7 +83,8 @@ button, select, input { font-family: inherit; }
 #scr-chat[data-theme="sejong"] {
   --scene-image: url("/bg-sejong.svg");
   --scene-fallback: linear-gradient(180deg, #4785aa 0%, #a9d2b8 55%, #e8dcbe 100%);
-  --scene-overlay: linear-gradient(180deg, rgba(236,226,201,.46), rgba(236,226,201,.34) 40%, rgba(236,226,201,.80) 100%);
+  --scene-blur: 1.5px; --scene-pos: center 10%;
+  --scene-overlay: linear-gradient(180deg, rgba(236,226,201,.14), rgba(236,226,201,.30) 46%, rgba(236,226,201,.82) 100%);
   --head-text: #221d15; --muted: #7c7059; --accent: var(--seal);
   --gauge-grad: linear-gradient(90deg, var(--gold), var(--seal));
 }
