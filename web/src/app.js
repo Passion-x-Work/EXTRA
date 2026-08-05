@@ -50,8 +50,9 @@ const phaseFromGauge = (g) => Math.max(1, Math.min(5, Math.ceil((g || 0) / 20) |
 function updateScene() {
   const sc = $("scr-chat");
   let img = null;
-  if (charId === "sejong") img = `/Assets/Sejong/Phase0${phaseFromGauge(state.gauge)}.png`;
-  else if (charId === "vangogh") img = `/Assets/gogh/BG02_night.png`;
+  const ph = phaseFromGauge(state.gauge);
+  if (charId === "sejong") img = `/Assets/Sejong/Phase0${ph}.png`;
+  else if (charId === "vangogh") img = `/Assets/gogh/Gogh-Phase0${ph}.png`;
   if (img) sc.style.setProperty("--scene-image", `url("${img}")`);
   else sc.style.removeProperty("--scene-image");
 }

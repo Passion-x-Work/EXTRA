@@ -89,9 +89,10 @@ button, select, input { font-family: inherit; }
   --gauge-grad: linear-gradient(90deg, var(--gold), var(--seal));
 }
 #scr-chat[data-theme="vangogh"] {
-  --scene-image: url("/bg-vangogh.jpg");
+  --scene-image: url("/Assets/gogh/Gogh-Phase02.png");
   --scene-fallback: linear-gradient(180deg, #1c2c6e, #12204c);
-  --scene-overlay: linear-gradient(180deg, rgba(12,18,48,.52), rgba(12,18,48,.34) 34%, rgba(8,12,32,.82) 100%);
+  --scene-blur: 1.5px; --scene-pos: center 8%;
+  --scene-overlay: linear-gradient(180deg, rgba(10,14,40,.34), rgba(10,14,40,.20) 40%, rgba(8,12,32,.74) 100%);
   --head-text: #f1e7cf; --muted: #cabfa6; --accent: #ecc846;
   --gauge-grad: linear-gradient(90deg, #3a5bc0, #ecc846);
 }
