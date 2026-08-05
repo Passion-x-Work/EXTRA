@@ -18,7 +18,9 @@
     "consecutive_bad_lose": 6
   },
   "hint_unlock": {
+    "_comment": "hint_budget=난이도별 힌트 사용 가능 개수(자동+수동 공용 예산). 추후 '이지 클리어 보상 힌트카드'가 이 예산에 +N 되는 구조로 확장 예정",
     "trigger_fail_count": 3,
+    "hint_budget": { "easy": 3, "mid": 2, "hard": 1 },
     "order": {
       "sejong": ["sejong-002", "sejong-004", "sejong-003"],
       "vangogh": ["vangogh-003", "vangogh-006", "vangogh-004"]

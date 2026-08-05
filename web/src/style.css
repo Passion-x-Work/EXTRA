@@ -66,9 +66,22 @@ button, select, input { font-family: inherit; }
 .relic.disabled { opacity: .4; cursor: not-allowed; }
 .relic.disabled::before { background: #9a8f76; box-shadow: none; }
 
-/* ══════════ 대화 ══════════ */
-#scr-chat { padding: 0; overflow: hidden; } /* .screen 의 position:absolute 유지(프레임 채움 + 의사요소 컨테이닝) */
+/* ══════════ 대화 (좌: 캐릭터 1/3 · 우: 대화 2/3) ══════════ */
+#scr-chat { padding: 0; overflow: hidden; flex-direction: row; } /* .screen 의 position:absolute 유지(프레임 채움 + 의사요소 컨테이닝) */
 #scr-chat[data-theme] { background: var(--scene-fallback); }
+#char-panel {
+  width: 36%; position: relative; z-index: 1;
+  display: flex; align-items: flex-end; justify-content: center;
+  pointer-events: none; /* 클릭은 대화 영역만 */
+}
+#char-portrait {
+  width: 108%; max-width: none; max-height: 98%;
+  object-fit: contain; object-position: bottom center;
+  transition: opacity .35s ease;
+  filter: drop-shadow(0 8px 18px rgba(0,0,0,.35));
+}
+#char-portrait[src=""] { display: none; }
+.chat-main { width: 64%; display: flex; flex-direction: column; min-width: 0; position: relative; z-index: 1; }
 /* 인물별 세계 배경: 블러 + 반투명 베일로 흐리게 → 대사 가독성 확보 */
 #scr-chat[data-theme]::before {
   content: ""; position: absolute; inset: -14px; z-index: 0;
@@ -89,7 +102,7 @@ button, select, input { font-family: inherit; }
   --gauge-grad: linear-gradient(90deg, var(--gold), var(--seal));
 }
 #scr-chat[data-theme="vangogh"] {
-  --scene-image: url("/Assets/gogh/Gogh-Phase02.png");
+  --scene-image: url("/Assets/gogh/Gogh-Phase02.webp");
   --scene-fallback: linear-gradient(180deg, #1c2c6e, #12204c);
   --scene-blur: 1.5px; --scene-pos: center 8%;
   --scene-overlay: linear-gradient(180deg, rgba(10,14,40,.34), rgba(10,14,40,.20) 40%, rgba(8,12,32,.74) 100%);
@@ -132,6 +145,10 @@ button, select, input { font-family: inherit; }
 .msg.me { background: #26364f; color: #f2ede1; align-self: flex-end; border-bottom-right-radius: 3px; }
 .sources { font-size: .69rem; color: var(--muted); align-self: flex-start; padding-left: 4px; }
 .grade-tag { font-size: .72rem; font-weight: 800; letter-spacing: 1px; color: var(--accent); align-self: center; text-shadow: 0 1px 3px rgba(0,0,0,.35); }
+.msg { transition: opacity .3s ease; }
+.msg.faded { opacity: .55; }                 /* 지난 대화 */
+.msg.latest { font-weight: 700; }            /* 최신 대화 강조 */
+.msg.npc.latest { font-weight: 400; font-size: 1.02em; } /* 인물 대사는 명조 유지, 크기로 강조 */
 .msg.hint { align-self: stretch; max-width: 100%; background: #fff3d6; border: 1px dashed var(--gold); color: #5a4e30; font-family: var(--sans); font-size: .82rem; line-height: 1.5; box-shadow: 0 2px 8px rgba(0,0,0,.12); }
 .msg.hint b { color: var(--seal); }
 .hint-src { font-size: .66rem; color: #9a9078; margin-top: 5px; }
@@ -146,7 +163,33 @@ button, select, input { font-family: inherit; }
 .turn-form input:focus { outline: none; border-color: var(--gold); }
 .turn-form button { padding: 0 18px; border: none; border-radius: 12px; background: var(--seal); color: #fff; font-size: 1rem; cursor: pointer; }
 .turn-form button:disabled { opacity: .5; cursor: wait; }
+.hint-btn {
+  padding: 0 13px; border: 1.5px solid var(--gold); border-radius: 12px;
+  background: #fff3d6; color: #5a4e30; font-size: .88rem; font-weight: 700; cursor: pointer;
+  transition: transform .12s, box-shadow .2s, opacity .2s; flex-shrink: 0;
+}
+.hint-btn:not(:disabled):hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(173,130,52,.35); }
+.hint-btn:disabled { opacity: .38; cursor: not-allowed; }
 .turn-count { text-align: center; font-size: .68rem; color: var(--muted, #a89c82); padding: 4px 0 10px; }
+
+/* 종료 게이트: 마지막 대사 확인 후 결과 보기(클릭 또는 7초 자동) */
+.end-gate {
+  align-self: center; position: relative; overflow: hidden; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  margin: 6px 0 4px; padding: 12px 26px 15px;
+  background: #fdf6e6; border: 1.5px solid var(--gold); border-radius: 13px;
+  box-shadow: 0 6px 18px rgba(0,0,0,.22);
+  animation: gatePulse 1.6s ease-in-out infinite;
+}
+.eg-label { font-family: var(--serif); font-weight: 800; font-size: .95rem; color: var(--seal); }
+.eg-arrow { font-size: .78rem; font-weight: 700; color: var(--ink-soft); letter-spacing: .5px; }
+.eg-bar {
+  position: absolute; left: 0; bottom: 0; height: 3px; width: 100%;
+  background: var(--gold); transform-origin: left;
+  animation: gateBar 7s linear forwards; /* 자동 진행 타이머와 동기화 */
+}
+@keyframes gatePulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.03); } }
+@keyframes gateBar { from { transform: scaleX(1); } to { transform: scaleX(0); } }
 
 /* ══════════ 결과(낙관 문서) ══════════ */
 #scr-result {
@@ -190,6 +233,24 @@ button, select, input { font-family: inherit; }
 .rc-title.muted { color: #9a9078; font-weight: 500; }
 .rc-chip { font-size: .72rem; background: #fff3d8; border: 1px solid var(--line); color: var(--ink-soft); padding: 3px 9px; border-radius: 20px; }
 
+/* 클리어 보상: 다음 난이도용 힌트 카드 */
+.rc-bonus {
+  width: 100%; margin-top: 10px; padding: 10px 14px;
+  background: linear-gradient(135deg, #fff3d6, #ffe9b8);
+  border: 1.5px dashed var(--gold); border-radius: 10px;
+  font-size: .82rem; color: #5a4e30; text-align: center;
+  animation: bonusIn .5s cubic-bezier(.3,1.5,.5,1) .35s backwards;
+}
+.rc-bonus b { color: var(--seal); }
+.rc-bonus small { display: block; margin-top: 3px; font-size: .68rem; color: #9a8a60; }
+.rc-bonus.muted { border-style: solid; opacity: .7; }
+@keyframes bonusIn { from { transform: scale(.6) rotate(-3deg); opacity: 0; } to { transform: scale(1) rotate(0); opacity: 1; } }
+
+/* 승리 카드 팝인 + 꽃가루 */
+.card.pop-in { animation: cardPop .55s cubic-bezier(.25,1.4,.45,1); }
+@keyframes cardPop { 0% { transform: scale(.55) translateY(40px); opacity: 0; } 100% { transform: scale(1) translateY(0); opacity: 1; } }
+.confetti { position: absolute; inset: 0; pointer-events: none; z-index: 10; }
+
 /* 사료 도감 화면 */
 #scr-dogam { background: radial-gradient(110% 80% at 50% 15%, #efe6cf, #ddcda6); }
 .dogam-head { display: flex; align-items: center; justify-content: space-between; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
@@ -201,6 +262,13 @@ button, select, input { font-family: inherit; }
 .dc-topic { font-family: var(--serif); font-weight: 700; font-size: .92rem; color: var(--ink); }
 .dc-content { font-size: .82rem; color: var(--ink-soft); line-height: 1.5; margin: 4px 0; }
 .dc-src { font-size: .68rem; color: #9a9078; }
+
+/* 모바일(<760px): 캐릭터 패널을 배경 오버레이로 — 대화 영역 풀폭 확보 */
+@media (max-width: 759px) {
+  #char-panel { position: absolute; inset: auto 0 0 0; width: 100%; height: 62%; justify-content: flex-start; z-index: 0; opacity: .5; }
+  #char-portrait { width: 52%; max-height: 100%; object-position: bottom left; }
+  .chat-main { width: 100%; }
+}
 
 /* ══════════ 데스크톱: 중앙 문서 프레임 ══════════ */
 @media (min-width: 760px) {

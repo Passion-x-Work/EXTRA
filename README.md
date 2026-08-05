@@ -33,10 +33,19 @@ npm run dev
 판정으로 자동 폴백하며, 게임 루프·신념게이지·승패 판정이 모두 정상 동작합니다.
 
 Claude를 통한 실제 AI 판정을 쓰려면 프로젝트 루트에 `.env`를 만들고 키를 넣습니다.
-※파일명·변수명 확인
+(변수명은 `.env.example` 기준 — `CLAUDE_API_KEY`입니다. `ANTHROPIC_API_KEY` 아님 주의)
 
 ```
-ANTHROPIC_API_KEY=sk-ant-...
+AI_PROVIDER=claude
+CLAUDE_API_KEY=sk-ant-...
+```
+
+그리고 판정 프록시 서버를 함께 실행해야 합니다. (미실행 시 `/api/judge`가
+실패해 오프라인 판정으로 폴백됩니다)
+
+```bash
+npm run server   # 판정 프록시 :8787
+npm run dev      # 프론트 :5173 (별도 터미널)
 ```
 
 두 모드의 차이는 다음과 같습니다.

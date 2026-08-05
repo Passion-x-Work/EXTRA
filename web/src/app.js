@@ -29,6 +29,15 @@ function addToDogam(cid, ids) {
 }
 const fragTopic = (cid, id) => chars[cid]?.knowledge.fragments.find((f) => f.id === id)?.topic || id;
 
+// ── 보너스 힌트 카드(클리어 보상, localStorage) ──
+// 이지 클리어 → 미디움용 +1, 미디움 클리어 → 하드용 +1. 난이도별 최대 2장 보유.
+const BONUS_KEY = "extra_bonus_hints_v1";
+const NEXT_DIFF = { easy: "mid", mid: "hard" };
+const DIFF_LABEL = { easy: "이지", mid: "미디움", hard: "하드" };
+const BONUS_CAP = 2;
+const loadBonus = () => { try { return JSON.parse(localStorage.getItem(BONUS_KEY)) || {}; } catch (_) { return {}; } };
+const saveBonus = (b) => localStorage.setItem(BONUS_KEY, JSON.stringify(b));
+
 const character = () => {
   const c = chars[charId];
   return { profile: c.profile, knowledge: c.knowledge, debate: c.debate };
@@ -47,14 +56,37 @@ function renderGauge() {
 
 // 신념 게이지 → 인물 단계(Phase 1~5). 설득될수록 표정/자세가 바뀜.
 const phaseFromGauge = (g) => Math.max(1, Math.min(5, Math.ceil((g || 0) / 20) || 1));
+
+// 캐릭터 이미지 페이드 전환(같은 이미지는 스킵)
+function fadePortrait(el, newSrc) {
+  if (!el || el.getAttribute("src") === newSrc) return;
+  el.style.opacity = "0";
+  setTimeout(() => {
+    el.onload = () => { el.style.opacity = "1"; };
+    el.src = newSrc;
+  }, 300);
+}
+
+// 배경(게이지 연동: ≤50 어두움 → >50 밝음) + 캐릭터(톤별 시리즈 × Phase별 표정)
 function updateScene() {
   const sc = $("scr-chat");
-  let img = null;
+  const portrait = $("char-portrait");
   const ph = phaseFromGauge(state.gauge);
-  if (charId === "sejong") img = `/Assets/Sejong/Phase0${ph}.png`;
-  else if (charId === "vangogh") img = `/Assets/gogh/Gogh-Phase0${ph}.png`;
-  if (img) sc.style.setProperty("--scene-image", `url("${img}")`);
-  else sc.style.removeProperty("--scene-image");
+  const bright = state.gauge > 50;
+
+  if (charId === "sejong") {
+    const bg = bright ? "/Assets/Sejong/BG01.webp" : "/Assets/Sejong/BG02.webp";
+    sc.style.setProperty("--scene-image", `url("${bg}")`);
+    const series = tone === "meme" ? "Hip-Front-NoBG" : "Front-NoBG";
+    fadePortrait(portrait, `/Assets/Sejong/${series}-Phase0${ph}.webp`);
+  } else if (charId === "vangogh") {
+    const bg = bright ? "/Assets/gogh/Gogh-BG01.webp" : "/Assets/gogh/Gogh-BG02_night.webp";
+    sc.style.setProperty("--scene-image", `url("${bg}")`);
+    const series = tone === "meme" ? "Hip-NoBG_Gogh" : "NoBG_Gogh";
+    fadePortrait(portrait, `/Assets/gogh/${series}-Phase0${ph}.webp`);
+  } else {
+    sc.style.removeProperty("--scene-image");
+  }
 }
 
 // 설득의 축 진행 표시: 찾기 전엔 이름 가림(숨은조건 추리 유지), 커버하면 공개
@@ -68,8 +100,15 @@ function renderAxisTrack() {
 }
 
 function addLine(text, cls) {
+  // 지난 대화는 투명하게, 최신 대화는 강조 (NPC/나 말풍선만 — 등급태그·출처는 제외)
+  if (cls === "npc" || cls === "me") {
+    document.querySelectorAll("#log .msg.latest").forEach((m) => {
+      m.classList.remove("latest");
+      m.classList.add("faded");
+    });
+  }
   const div = document.createElement("div");
-  div.className = "msg " + cls;
+  div.className = "msg " + cls + (cls === "npc" || cls === "me" ? " latest" : "");
   div.textContent = text;
   $("log").appendChild(div);
   $("log").scrollTop = $("log").scrollHeight;
@@ -91,6 +130,11 @@ function startGame(id) {
   state.collected = new Set(); // 이번 판에 만난 사료 카드
   state.coveredAxes = new Set(); // 이번 판에 커버한 가치 축(설득 깊이)
   state.hintIdx = 0; // 열어준 힌트 개수
+  // 난이도별 힌트 예산(자동+수동 공용) + 클리어 보상 보너스 힌트 합산
+  // (보너스는 게임 종료 시 '기본 예산을 초과해 실제로 쓴 만큼만' 차감 — 중도이탈 시 보존)
+  state.baseBudget = cfg.hint_unlock?.hint_budget?.[difficulty] ?? 2;
+  state.bonusAvail = Math.min(loadBonus()[difficulty] || 0, BONUS_CAP);
+  state.hintsLeft = state.baseBudget + state.bonusAvail;
   state.turnLog = []; // 톤 전환 시 리렌더용 기록
   firstInputSaved = "";
   $("log").innerHTML = "";
@@ -101,6 +145,7 @@ function startGame(id) {
   $("turn-input").placeholder = `${profile.displayName}에게 건넬 논거를 입력…`;
   renderGauge();
   renderAxisTrack();
+  renderHintBtn();
   updateScene();
   addLine(scenario.openingLines?.[tone] || scenario.openingLines?.classic || "…", "npc");
   show("scr-chat");
@@ -117,23 +162,86 @@ function endGame() {
   const note = won ? scn.winScene?.historicalNote : scn.loseScene?.historicalNote;
   $("result-cta").textContent = note || "";
 
-  // 승리 보상: 이번 판에 만난 사료 카드를 도감에 수집
+  // 보너스 힌트 정산: 기본 예산을 초과해 쓴 만큼만 차감
+  const used = (state.baseBudget + state.bonusAvail) - state.hintsLeft;
+  const bonusSpent = Math.max(0, used - state.baseBudget);
+  if (bonusSpent > 0) {
+    const b = loadBonus();
+    b[difficulty] = Math.max(0, (b[difficulty] || 0) - bonusSpent);
+    saveBonus(b);
+  }
+
+  // 승리 보상: 사료 카드 도감 수집 + 다음 난이도용 보너스 힌트 카드
   const rc = $("result-cards");
   if (won) {
     const prev = new Set(loadDogam()[charId] || []);
     const got = [...(state.collected || [])];
     const fresh = got.filter((id) => !prev.has(id));
     addToDogam(charId, got);
-    rc.innerHTML = fresh.length
+    let html = fresh.length
       ? `<div class="rc-title">사료 카드 ${fresh.length}장 획득</div>` +
         fresh.map((id) => `<span class="rc-chip">${fragTopic(charId, id)}</span>`).join("")
       : `<div class="rc-title muted">이미 모은 사료였습니다</div>`;
+
+    // 클리어 보상: 다음 난이도용 힌트 카드 +1 (난이도별 보유 상한 BONUS_CAP)
+    const next = NEXT_DIFF[difficulty];
+    if (next) {
+      const b = loadBonus();
+      if ((b[next] || 0) < BONUS_CAP) {
+        b[next] = (b[next] || 0) + 1;
+        saveBonus(b);
+        html += `<div class="rc-bonus">🎁 보상 카드 — <b>${DIFF_LABEL[next]}</b> 난이도 힌트 <b>+1</b><small>다음 ${DIFF_LABEL[next]} 도전 시 힌트 예산에 자동 합산 (보유 ${b[next]}/${BONUS_CAP})</small></div>`;
+      } else {
+        html += `<div class="rc-bonus muted">🎁 ${DIFF_LABEL[next]} 힌트 카드 보유 한도 도달 (${BONUS_CAP}/${BONUS_CAP})</div>`;
+      }
+    }
+    rc.innerHTML = html;
   } else rc.innerHTML = "";
 
   show("scr-result");
   const seal = $("win-seal");
   seal.classList.remove("stamped");
-  if (won) requestAnimationFrame(() => seal.classList.add("stamped")); // 낙관 쾅
+  $("result-card").classList.remove("pop-in");
+  if (won) {
+    requestAnimationFrame(() => {
+      $("result-card").classList.add("pop-in"); // 카드 팝인
+      seal.classList.add("stamped");            // 낙관 쾅
+      burstConfetti();                          // 축하 꽃가루
+    });
+  }
+}
+
+// ── 축하 꽃가루(승리 시) — 의존성 없는 경량 캔버스 애니메이션 ──
+function burstConfetti() {
+  const host = $("scr-result");
+  const cv = document.createElement("canvas");
+  cv.className = "confetti";
+  cv.width = host.clientWidth; cv.height = host.clientHeight;
+  host.appendChild(cv);
+  const g = cv.getContext("2d");
+  const colors = ["#a8322a", "#ad8234", "#2f6f9e", "#e8c96a", "#fdf6e6"];
+  const parts = Array.from({ length: 90 }, () => ({
+    x: cv.width / 2 + (Math.random() - 0.5) * cv.width * 0.4,
+    y: cv.height * 0.35,
+    vx: (Math.random() - 0.5) * 11,
+    vy: -(4 + Math.random() * 9),
+    w: 6 + Math.random() * 6, h: 4 + Math.random() * 5,
+    rot: Math.random() * Math.PI, vr: (Math.random() - 0.5) * 0.3,
+    c: colors[Math.floor(Math.random() * colors.length)],
+  }));
+  let frame = 0;
+  (function tick() {
+    g.clearRect(0, 0, cv.width, cv.height);
+    for (const p of parts) {
+      p.vy += 0.25; p.x += p.vx; p.y += p.vy; p.rot += p.vr;
+      g.save(); g.translate(p.x, p.y); g.rotate(p.rot);
+      g.fillStyle = p.c; g.globalAlpha = Math.max(0, 1 - frame / 120);
+      g.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+      g.restore();
+    }
+    if (++frame < 130) requestAnimationFrame(tick);
+    else cv.remove();
+  })();
 }
 
 // ── 사료 도감 렌더 ──
@@ -152,6 +260,22 @@ function renderDogam() {
       cards.map((f) => `<div class="dogam-card"><div class="dc-topic">${f.topic}</div><div class="dc-content">${f.content}</div><div class="dc-src">${f.source.split("/")[0].slice(0, 46)}</div></div>`).join("") +
       `</div>`;
   }).join("");
+}
+
+// 시작 시 판정 프록시 health 체크 → 서버가 없거나 키가 없으면 드롭다운을 자동 조정
+async function checkHealth() {
+  const sel = $("provider");
+  try {
+    const res = await fetch("/api/health");
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const h = await res.json();
+    // 현재 선택된 provider의 키가 서버에 없으면 사용 가능한 쪽으로 전환
+    if (sel.value === "gpt" && !h.providers?.gpt) sel.value = h.providers?.claude ? "claude" : "offline";
+    else if (sel.value === "claude" && !h.providers?.claude) sel.value = h.providers?.gpt ? "gpt" : "offline";
+  } catch (_) {
+    sel.value = "offline"; // 프록시 서버 미실행 → 오프라인 판정으로
+    console.warn("[EXTRA] 판정 프록시(:8787) 응답 없음 → 오프라인 판정 모드");
+  }
 }
 
 async function getVerdict(input, mode) {
@@ -196,8 +320,32 @@ async function onTurn(e) {
   renderAxisTrack();
   updateScene();
   maybeUnlockHint();
+  renderHintBtn();
 
-  if (state.status !== "CONTINUE") setTimeout(endGame, 700);
+  // 종료 시: 인물의 마지막 대사를 읽을 시간을 준다 → ▶ 클릭 또는 7초 후 자동 진행
+  if (state.status !== "CONTINUE") showEndGate();
+}
+
+// ── 종료 게이트: 마지막 대사 확인 후 결과로 ──
+let endGateTimer = null;
+function showEndGate() {
+  $("turn-input").disabled = true;
+  $("turn-form").querySelector("button[type=submit]").disabled = true;
+  const gate = document.createElement("button");
+  gate.type = "button";
+  gate.id = "end-gate";
+  gate.className = "end-gate";
+  gate.innerHTML = `<span class="eg-label">${state.status === "WIN" ? "설득이 통했다!" : "설득이 끝났다…"}</span><span class="eg-arrow">결과 보기 ▶</span><span class="eg-bar"></span>`;
+  $("log").appendChild(gate);
+  $("log").scrollTop = $("log").scrollHeight;
+  const go = () => {
+    clearTimeout(endGateTimer); endGateTimer = null;
+    $("turn-input").disabled = false;
+    $("turn-form").querySelector("button[type=submit]").disabled = false;
+    endGame();
+  };
+  gate.addEventListener("click", go);
+  endGateTimer = setTimeout(go, 7000); // 7초 후 자동 진행(진행바와 동기화)
 }
 
 // 판정 결과(대사+출처+등급) 렌더
@@ -238,20 +386,48 @@ function retone() {
   }
 }
 
-// 연속 실패 시 실제 사료 카드를 힌트로 열어준다(도감에도 수집).
+// ── 힌트 시스템: 난이도별 예산(이지3/미디움2/하드1), 자동+수동 병행 ──
+// 자동: 연속 실패(trigger_fail_count)마다 / 수동: 틀린 직후 활성화되는 💡 버튼.
+// 둘 다 같은 예산(state.hintsLeft)을 소모한다.
+
+// 다음 순서의 사료 카드를 힌트로 연다(도감에도 수집). 성공 시 true.
+function unlockHint() {
+  if (state.status !== "CONTINUE") return false;
+  if ((state.hintsLeft ?? 0) <= 0) return false;
+  const order = cfg.hint_unlock?.order?.[charId] || chars[charId].knowledge.fragments.map((f) => f.id);
+  if (state.hintIdx >= order.length) return false;
+  const f = chars[charId].knowledge.fragments.find((x) => x.id === order[state.hintIdx]);
+  state.hintIdx++;
+  if (!f) return false;
+  state.hintsLeft--;
+  state.consecutiveBad = 0; // 힌트 후 카운터 리셋(6연속 실패 패배와 밸런스 유지)
+  state.collected.add(f.id); // 힌트로 얻은 사료도 도감에
+  state.turnLog.push({ type: "hint", fragId: f.id });
+  addHintCard(f);
+  renderHintBtn();
+  return true;
+}
+
+// 자동 힌트: 연속 실패가 트리거에 도달하면 예산에서 차감하며 자동 공개
 function maybeUnlockHint() {
   if (state.status !== "CONTINUE") return;
   const trig = cfg.hint_unlock?.trigger_fail_count || 3;
   if ((state.consecutiveBad || 0) < trig) return;
-  const order = cfg.hint_unlock?.order?.[charId] || chars[charId].knowledge.fragments.map((f) => f.id);
-  if (state.hintIdx >= order.length) return;
-  const f = chars[charId].knowledge.fragments.find((x) => x.id === order[state.hintIdx]);
-  state.hintIdx++;
-  state.consecutiveBad = 0; // 힌트 후 카운터 리셋
-  if (!f) return;
-  state.collected.add(f.id); // 힌트로 얻은 사료도 도감에
-  state.turnLog.push({ type: "hint", fragId: f.id });
-  addHintCard(f);
+  unlockHint();
+}
+
+// 수동 힌트 버튼: 직전 판정이 틀렸을 때(불합치/역효과)만 활성화
+function renderHintBtn() {
+  const btn = $("hint-btn");
+  if (!btn) return;
+  const left = state?.hintsLeft ?? 0;
+  const wrong = (state?.consecutiveBad || 0) > 0; // 직전 답이 틀렸는가
+  const usable = state && state.status === "CONTINUE" && left > 0 && wrong;
+  btn.textContent = `💡 ${left}`;
+  btn.disabled = !usable;
+  btn.title = usable
+    ? `사료 힌트 보기 (남은 힌트 ${left}개)`
+    : left <= 0 ? "힌트를 모두 사용했습니다" : "틀린 판정이 나오면 힌트를 쓸 수 있어요";
 }
 
 // ── 결과 공유 카드 (canvas → PNG). 숨은조건은 담지 않는다. ──
@@ -331,6 +507,7 @@ document.querySelectorAll(".relic[data-char]").forEach((b) =>
   b.addEventListener("click", () => startGame(b.dataset.char))
 );
 $("turn-form").addEventListener("submit", onTurn);
+$("hint-btn").addEventListener("click", () => unlockHint()); // 수동 힌트(예산 차감)
 $("save-card").addEventListener("click", saveCard);
 $("retry").addEventListener("click", () => show("scr-map"));
 // 말투 슬라이딩 스위치(정통↔밈): 즉시 로그를 새 말투로 리렌더
@@ -340,7 +517,7 @@ $("tone-toggle").addEventListener("click", () => {
   sw.dataset.on = on ? "true" : "false";
   sw.setAttribute("aria-checked", on ? "true" : "false");
   sw.querySelector(".ts-cap").textContent = on ? "밈" : "정통";
-  if (state) retone();
+  if (state) { retone(); updateScene(); } // 로그 리렌더 + 캐릭터 시리즈 교체(정통↔밈)
 });
 // 난이도 선택
 document.querySelectorAll("#diff-select .diff").forEach((b) =>
@@ -352,3 +529,5 @@ document.querySelectorAll("#diff-select .diff").forEach((b) =>
 // 사료 도감
 $("open-dogam").addEventListener("click", () => { renderDogam(); show("scr-dogam"); });
 $("close-dogam").addEventListener("click", () => show("scr-map"));
+// 판정 프록시 상태 확인(비동기 — 실패해도 게임엔 지장 없음)
+checkHealth();
