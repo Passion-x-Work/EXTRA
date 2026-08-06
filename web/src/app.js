@@ -40,6 +40,50 @@ const BONUS_CAP = 2;
 const loadBonus = () => { try { return JSON.parse(localStorage.getItem(BONUS_KEY)) || {}; } catch (_) { return {}; } };
 const saveBonus = (b) => localStorage.setItem(BONUS_KEY, JSON.stringify(b));
 
+// ── 진행 저장/이어하기(localStorage, 인물별) ──
+const SAVE_KEY = "extra_save_v1";
+const loadSaves = () => { try { return JSON.parse(localStorage.getItem(SAVE_KEY)) || {}; } catch (_) { return {}; } };
+function saveGame() {
+  if (!state || !charId || state.status !== "CONTINUE" || (state.turn || 0) < 1) return; // 의미 있는 진행만
+  const all = loadSaves();
+  all[charId] = {
+    gauge: state.gauge, turn: state.turn, consecutiveBad: state.consecutiveBad, status: state.status,
+    hintIdx: state.hintIdx, hintsLeft: state.hintsLeft, baseBudget: state.baseBudget, bonusAvail: state.bonusAvail,
+    coveredAxes: [...state.coveredAxes], collected: [...state.collected],
+    history: state.history, turnLog: state.turnLog, tone, difficulty, firstInputSaved, ts: Date.now(),
+  };
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(all)); } catch (_) {}
+}
+function clearSave(id) {
+  const all = loadSaves(); delete all[id];
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(all)); } catch (_) {}
+}
+// 지도 유적에 '이어하기 · 턴 N' 표시 + 처음부터(↺) 버튼 갱신
+function refreshMapSaves() {
+  const saves = loadSaves();
+  document.querySelectorAll(".relic[data-char]").forEach((b) => {
+    const id = b.dataset.char, sub = b.querySelector(".relic-sub");
+    if (!sub) return;
+    if (b.dataset.sub0 == null) b.dataset.sub0 = sub.textContent;
+    const sv = saves[id];
+    let x = b.querySelector(".relic-fresh");
+    if (sv && sv.status === "CONTINUE") {
+      sub.textContent = `이어하기 · 턴 ${sv.turn}`;
+      b.classList.add("relic--resume");
+      if (!x) {
+        x = document.createElement("span");
+        x.className = "relic-fresh"; x.textContent = "↺"; x.title = "처음부터 시작";
+        x.addEventListener("click", (e) => { e.stopPropagation(); e.preventDefault(); clearSave(id); refreshMapSaves(); });
+        b.appendChild(x);
+      }
+    } else {
+      sub.textContent = b.dataset.sub0;
+      b.classList.remove("relic--resume");
+      if (x) x.remove();
+    }
+  });
+}
+
 const character = () => {
   const c = chars[charId];
   return { profile: c.profile, knowledge: c.knowledge, debate: c.debate };
@@ -129,21 +173,53 @@ function addSources(sources) {
   $("log").appendChild(div);
 }
 
-function startGame(id) {
+// 말투 스위치 / 난이도 버튼의 표시를 현재 tone·difficulty 값과 동기화(이어하기 복원 시에도 사용)
+function syncToneUI() {
+  const sw = $("tone-toggle"); if (!sw) return;
+  const on = tone === "meme";
+  sw.dataset.on = on ? "true" : "false";
+  sw.setAttribute("aria-checked", on ? "true" : "false");
+  const cap = sw.querySelector(".ts-cap"); if (cap) cap.textContent = on ? "밈" : "정통";
+}
+function syncDiffUI() {
+  document.querySelectorAll("#diff-select .diff").forEach((x) => x.classList.toggle("active", x.dataset.diff === difficulty));
+}
+
+function startGame(id, resume = false) {
   charId = id;
   const { profile, scenario } = chars[charId];
+  const sv = resume ? loadSaves()[id] : null;
+  const resuming = !!(sv && sv.status === "CONTINUE");
   state = initState(cfg, charId);
-  state.gauge = Math.max(0, Math.min(100, state.gauge + (DIFF_START[difficulty] || 0))); // 난이도 보정
-  state.collected = new Set(); // 이번 판에 만난 사료 카드
-  state.coveredAxes = new Set(); // 이번 판에 커버한 가치 축(설득 깊이)
-  state.hintIdx = 0; // 열어준 힌트 개수
-  // 난이도별 힌트 예산(자동+수동 공용) + 클리어 보상 보너스 힌트 합산
-  // (보너스는 게임 종료 시 '기본 예산을 초과해 실제로 쓴 만큼만' 차감 — 중도이탈 시 보존)
-  state.baseBudget = cfg.hint_unlock?.hint_budget?.[difficulty] ?? 2;
-  state.bonusAvail = Math.min(loadBonus()[difficulty] || 0, BONUS_CAP);
-  state.hintsLeft = state.baseBudget + state.bonusAvail;
-  state.turnLog = []; // 톤 전환 시 리렌더용 기록
-  firstInputSaved = "";
+
+  if (resuming) {
+    // 저장된 진행 복원(난이도·말투도 저장 시점 값으로)
+    difficulty = sv.difficulty || difficulty;
+    tone = sv.tone || tone;
+    Object.assign(state, { gauge: sv.gauge, turn: sv.turn, consecutiveBad: sv.consecutiveBad, status: "CONTINUE", history: sv.history || [] });
+    state.collected = new Set(sv.collected || []);
+    state.coveredAxes = new Set(sv.coveredAxes || []);
+    state.hintIdx = sv.hintIdx || 0;
+    state.baseBudget = sv.baseBudget ?? (cfg.hint_unlock?.hint_budget?.[difficulty] ?? 2);
+    state.bonusAvail = sv.bonusAvail ?? 0;
+    state.hintsLeft = sv.hintsLeft ?? state.baseBudget;
+    state.turnLog = sv.turnLog || [];
+    firstInputSaved = sv.firstInputSaved || "";
+  } else {
+    state.gauge = Math.max(0, Math.min(100, state.gauge + (DIFF_START[difficulty] || 0))); // 난이도 보정
+    state.collected = new Set(); // 이번 판에 만난 사료 카드
+    state.coveredAxes = new Set(); // 이번 판에 커버한 가치 축(설득 깊이)
+    state.hintIdx = 0; // 열어준 힌트 개수
+    // 난이도별 힌트 예산(자동+수동 공용) + 클리어 보상 보너스 힌트 합산
+    // (보너스는 게임 종료 시 '기본 예산을 초과해 실제로 쓴 만큼만' 차감 — 중도이탈 시 보존)
+    state.baseBudget = cfg.hint_unlock?.hint_budget?.[difficulty] ?? 2;
+    state.bonusAvail = Math.min(loadBonus()[difficulty] || 0, BONUS_CAP);
+    state.hintsLeft = state.baseBudget + state.bonusAvail;
+    state.turnLog = []; // 톤 전환 시 리렌더용 기록
+    firstInputSaved = "";
+  }
+
+  syncToneUI(); syncDiffUI();
   $("log").innerHTML = "";
   $("scr-chat").dataset.theme = charId; // 인물별 세계 배경/테마
   $("win-seal").classList.remove("stamped");
@@ -154,8 +230,9 @@ function startGame(id) {
   renderAxisTrack();
   renderHintBtn();
   updateScene();
-  addLine(scenario.openingLines?.[tone] || scenario.openingLines?.classic || "…", "npc");
-  snaps = [snapshot()]; // 시작(턴0) 스냅샷 = 되돌리기 하한
+  if (resuming && state.turnLog.length) retone(); // 저장된 로그(오프닝+대화) 전체 재구성
+  else addLine(scenario.openingLines?.[tone] || scenario.openingLines?.classic || "…", "npc");
+  snaps = [snapshot()]; // 시작(또는 복원) 스냅샷 = 되돌리기 하한
   show("scr-chat");
   $("turn-input").focus();
 }
@@ -410,7 +487,8 @@ async function onTurn(e) {
   maybeUnlockHint();
   renderHintBtn();
 
-  if (state.status === "CONTINUE") snaps.push(snapshot()); // 되돌리기용 턴 스냅샷
+  if (state.status === "CONTINUE") { snaps.push(snapshot()); saveGame(); } // 되돌리기용 스냅샷 + 자동 저장
+  else clearSave(charId); // 승부가 나면 저장 정리
 
   // 종료 시: 인물의 마지막 대사를 읽을 시간을 준다 → ▶ 클릭 또는 7초 후 자동 진행
   if (state.status !== "CONTINUE") showEndGate();
@@ -593,31 +671,32 @@ async function saveCard() {
   }, "image/png");
 }
 
+// 유적 클릭: 저장된 진행이 있으면 이어하기, 없으면 새로 시작
 document.querySelectorAll(".relic[data-char]").forEach((b) =>
-  b.addEventListener("click", () => startGame(b.dataset.char))
+  b.addEventListener("click", () => startGame(b.dataset.char, !!loadSaves()[b.dataset.char]))
 );
 $("turn-form").addEventListener("submit", onTurn);
 $("hint-btn").addEventListener("click", () => unlockHint()); // 수동 힌트(예산 차감)
 $("save-card").addEventListener("click", saveCard);
-$("retry").addEventListener("click", () => show("scr-map"));
+$("retry").addEventListener("click", () => { refreshMapSaves(); show("scr-map"); });
+// 뒤로가기: 진행 자동 저장 후 지도로
+$("back-map").addEventListener("click", () => { saveGame(); refreshMapSaves(); show("scr-map"); });
 // 말투 슬라이딩 스위치(정통↔밈): 즉시 로그를 새 말투로 리렌더
 $("tone-toggle").addEventListener("click", () => {
   tone = tone === "classic" ? "meme" : "classic";
-  const sw = $("tone-toggle"), on = tone === "meme";
-  sw.dataset.on = on ? "true" : "false";
-  sw.setAttribute("aria-checked", on ? "true" : "false");
-  sw.querySelector(".ts-cap").textContent = on ? "밈" : "정통";
+  syncToneUI();
   if (state) { retone(); updateScene(); } // 로그 리렌더 + 캐릭터 시리즈 교체(정통↔밈)
 });
 // 난이도 선택
 document.querySelectorAll("#diff-select .diff").forEach((b) =>
-  b.addEventListener("click", () => {
-    difficulty = b.dataset.diff;
-    document.querySelectorAll("#diff-select .diff").forEach((x) => x.classList.toggle("active", x === b));
-  })
+  b.addEventListener("click", () => { difficulty = b.dataset.diff; syncDiffUI(); })
 );
 // 사료 도감
 $("open-dogam").addEventListener("click", () => { renderDogam(); show("scr-dogam"); });
-$("close-dogam").addEventListener("click", () => show("scr-map"));
+$("close-dogam").addEventListener("click", () => { refreshMapSaves(); show("scr-map"); });
+// 탭을 닫거나 새로고침해도 진행 보존
+window.addEventListener("pagehide", saveGame);
+window.addEventListener("beforeunload", saveGame);
 // 판정 프록시 상태 확인(비동기 — 실패해도 게임엔 지장 없음)
 checkHealth();
+refreshMapSaves(); // 시작 시 이어하기 표시 반영

@@ -65,6 +65,16 @@ button, select, input { font-family: inherit; }
 .relic-sub { font-size: .76rem; color: var(--ink-soft); }
 .relic.disabled { opacity: .4; cursor: not-allowed; }
 .relic.disabled::before { background: #9a8f76; box-shadow: none; }
+/* 이어하기 상태의 유적 */
+.relic--resume { border-color: var(--gold); background: #fdf3d8; }
+.relic--resume::before { background: var(--gold); box-shadow: 0 0 0 3px rgba(173,130,52,.2); }
+.relic--resume .relic-sub { color: #9a6a1a; font-weight: 700; }
+.relic-fresh {
+  position: absolute; top: 8px; right: 10px; width: 24px; height: 24px; line-height: 22px;
+  text-align: center; border-radius: 50%; font-size: 1rem; color: var(--ink-soft);
+  background: rgba(255,255,255,.85); border: 1px solid var(--line); cursor: pointer;
+}
+.relic-fresh:hover { color: var(--seal); border-color: var(--seal); }
 
 /* ══════════ 대화 (좌: 캐릭터 1/3 · 우: 대화 2/3) ══════════ */
 #scr-chat { padding: 0; overflow: hidden; flex-direction: row; } /* .screen 의 position:absolute 유지(프레임 채움 + 의사요소 컨테이닝) */
@@ -122,6 +132,13 @@ button, select, input { font-family: inherit; }
   display: flex; flex-direction: column; gap: 10px; padding: 14px 18px 10px; margin: 0 auto; width: 100%; max-width: 760px;
 }
 .head-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.head-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.back-btn {
+  flex-shrink: 0; width: 34px; height: 34px; border-radius: 9px; cursor: pointer;
+  border: 1px solid rgba(0,0,0,.15); background: rgba(255,251,240,.92); color: var(--head-text);
+  font-size: 1.15rem; line-height: 1; display: flex; align-items: center; justify-content: center;
+}
+.back-btn:hover { border-color: var(--accent); color: var(--accent); }
 .head-ctl { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 .who { display: flex; flex-direction: column; min-width: 0; }
 .who span { font-family: var(--serif); font-weight: 800; font-size: 1.02rem; color: var(--head-text); text-shadow: 0 1px 4px rgba(0,0,0,.25); }
@@ -272,11 +289,18 @@ button, select, input { font-family: inherit; }
 .dc-content { font-size: .82rem; color: var(--ink-soft); line-height: 1.5; margin: 4px 0; }
 .dc-src { font-size: .68rem; color: #9a9078; }
 
-/* 모바일(<760px): 캐릭터 패널을 배경 오버레이로 — 대화 영역 풀폭 확보 */
+/* 모바일(<760px): 위=인물(크게·진하게), 아래=채팅(로그+입력) 도킹.
+   인물이 채팅 바로 위에 붙고, 채팅은 하단 영역 안에서만 쌓이며 스크롤 → 인물 안 가려짐. */
 @media (max-width: 759px) {
-  #char-panel { position: absolute; inset: auto 0 0 0; width: 100%; height: 62%; justify-content: flex-start; z-index: 0; opacity: .5; }
-  #char-portrait { width: 52%; max-height: 100%; object-position: bottom left; }
-  .chat-main { width: 100%; }
+  /* 상단 인물 밴드: 하단(발끝)이 채팅과 맞닿게 */
+  #char-panel {
+    position: absolute; inset: 0 0 auto 0; width: 100%; height: 52%;
+    justify-content: center; align-items: flex-end;
+    z-index: 1; opacity: 1;  /* 베일 위로 올려 또렷하게 */
+  }
+  #char-portrait { width: 72%; max-height: 100%; object-position: bottom center; }
+  /* 채팅은 하단 48%에 도킹 → 인물 바로 아래. 로그는 이 안에서 스크롤 */
+  .chat-main { width: 100%; height: 48%; align-self: flex-end; }
 }
 
 /* ══════════ 데스크톱: 중앙 문서 프레임 ══════════ */
