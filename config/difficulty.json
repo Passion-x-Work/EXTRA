@@ -11,8 +11,8 @@
   "characters": {
     "sejong":   { "difficulty": "tutorial", "mode": "mixed", "gauge_start": 40, "win_threshold": 100, "penalty_multiplier": 1.0, "judge_leniency": "high", "status": "full", "_note": "완성형 데모" },
     "vangogh":  { "difficulty": "standard", "mode": "mixed", "gauge_start": 30, "win_threshold": 100, "penalty_multiplier": 1.2, "judge_leniency": "medium", "status": "preview", "_note": "맛보기(가오픈)" },
-    "hokusai":  { "difficulty": "hard", "mode": "mixed", "gauge_start": 25, "win_threshold": 100, "penalty_multiplier": 1.3, "judge_leniency": "low", "status": "preview", "_note": "일본 축·퍼블릭도메인. 이미지는 배정윤 제작 예정" },
-    "miyazaki": { "status": "coming_soon", "_note": "생존·지브리 IP → 콜라보 비전 슬롯, 실제 개발 X" }
+    "hokusai":  { "difficulty": "hard", "mode": "mixed", "gauge_start": 25, "win_threshold": 100, "penalty_multiplier": 1.3, "judge_leniency": "low", "status": "hidden", "_note": "지도에서 숨김(파일·데이터 보존, 차기 공개용). 2026-08-06 결정" },
+    "miyamoto": { "status": "side_coming_soon", "_engine": "reverse-persuasion", "_note": "번외 · 역설득(AI가 설득/플레이어가 진위 판단). 기존 엔진과 다른 흐름 — 별도 UI/판정 필요. 데이터 뼈대: content/characters/miyamoto/cards.json. 생존 인물·실명 → NHN 규정·출처 검증 필요" }
   },
   "fail_conditions": {
     "_comment": "힌트 트리거(3)보다 커야 함 — 3회 실패 시 힌트가 먼저 뜨고(카운터 리셋), 힌트 소진 후 누적 실패로 패배",
