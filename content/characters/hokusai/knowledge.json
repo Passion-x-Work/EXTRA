@@ -1,0 +1,60 @@
+{
+  "_comment": "RAG 검색용 사료 조각. 근거 원본: docs/research/hokusai-sources.md. 발문 원문 정밀 대조는 본선 전 보강.",
+  "figure": "hokusai",
+  "fragments": [
+    {
+      "id": "hokusai-001",
+      "topic": "후지산과 파도",
+      "keywords": ["후지산", "파도", "가나가와", "우키요에", "36경"],
+      "content": "호쿠사이는 「후지산 36경」, 그중 「가나가와 앞바다의 파도」로 대표되는 우키요에의 대가다. 거대한 파도와 그 너머 작은 후지산의 대비로 세계적으로 사랑받는다.",
+      "source": "The Metropolitan Museum of Art / The British Museum — Katsushika Hokusai",
+      "sourceUrl": "https://www.metmuseum.org",
+      "tier": 2
+    },
+    {
+      "id": "hokusai-002",
+      "topic": "백경 발문 — 끝없는 정진",
+      "keywords": ["정진", "일흔셋", "백 살", "신묘", "발문", "이치"],
+      "content": "「후지산 백경」 발문에서 호쿠사이는 이렇게 적었다. 일흔셋에야 새·짐승·초목의 구조를 조금 알았고, 백 살이면 신묘한 경지에, 백열 살이면 점 하나 획 하나가 살아 숨쉬게 되리라. 완성이 아니라 끝없는 정진이 그의 목표였다.",
+      "source": "가쓰시카 호쿠사이, 「후지산 백경(富嶽百景)」 발문(1834)",
+      "sourceUrl": "https://www.britishmuseum.org",
+      "tier": 1
+    },
+    {
+      "id": "hokusai-003",
+      "topic": "화광노인",
+      "keywords": ["화광노인", "개명", "이사", "가난", "미친"],
+      "content": "호쿠사이는 평생 호를 약 서른 번 바꾸고 아흔세 번을 이사하며, 가난 속에서도 그림에 미쳐 스스로를 '화광노인(그림에 미친 노인)'이라 불렀다.",
+      "source": "The British Museum / Encyclopædia Britannica — Katsushika Hokusai",
+      "sourceUrl": "https://www.britannica.com/biography/Katsushika-Hokusai",
+      "tier": 2
+    },
+    {
+      "id": "hokusai-004",
+      "topic": "여섯 살부터",
+      "keywords": ["여섯 살", "형태", "일흔 전", "볼 것 없", "버릇"],
+      "content": "호쿠사이는 여섯 살 때부터 사물의 형태를 그리는 버릇이 있었으나, 일흔 전에 그린 것은 볼 것이 없다고 스스로 낮추어 말했다.",
+      "source": "가쓰시카 호쿠사이, 「후지산 백경」 발문(1834)",
+      "sourceUrl": "https://www.britishmuseum.org",
+      "tier": 1
+    },
+    {
+      "id": "hokusai-005",
+      "topic": "딸 오이",
+      "keywords": ["딸", "오이", "에이조", "화가", "도움"],
+      "content": "그의 딸 오이(에이조)도 뛰어난 화가로, 노년의 호쿠사이를 곁에서 도왔다.",
+      "source": "The British Museum — Katsushika Hokusai / Ōi",
+      "sourceUrl": "https://www.britishmuseum.org",
+      "tier": 2
+    },
+    {
+      "id": "hokusai-006",
+      "topic": "5년만 더",
+      "keywords": ["임종", "5년", "참된 화가", "더"],
+      "content": "임종 즈음 호쿠사이는 하늘이 몇 해만 더 준다면 참된 화가가 되련만이라 탄식했다고 전한다.",
+      "source": "Encyclopædia Britannica — Katsushika Hokusai (전해지는 일화)",
+      "sourceUrl": "https://www.britannica.com/biography/Katsushika-Hokusai",
+      "tier": 1
+    }
+  ]
+}

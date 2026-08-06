@@ -1,0 +1,38 @@
+{
+  "_comment": "설득 쟁점 표. 판정은 profile.values(가치 축)로 하고, 이 표는 RAG 컨텍스트·GPT/Claude 대사 참고용. 근거: docs/research/hokusai-sources.md",
+  "figure": "hokusai",
+  "scene": "정진을 멈출지 고민하는 호쿠사이 (1834경, 에도)",
+  "avoidanceMode": "mixed",
+  "startGauge": 25,
+  "goalGauge": 100,
+  "issues": [
+    {
+      "id": "issue-1",
+      "opponentClaim": "당신은 이미 대가요. 이만하면 충분하지 않소?",
+      "rebuttal": "충분하다? 나는 일흔 전 그림은 볼 것이 없다 여기네. 백 살이면 신묘한 경지에 이르겠지. 아직 멈출 때가 아니야.",
+      "responded": true,
+      "sourceRef": ["hokusai-002", "hokusai-004"]
+    },
+    {
+      "id": "issue-2",
+      "opponentClaim": "그 그림들이 돈이 되오? 팔리지도 않는데.",
+      "rebuttal": "돈으로 저 파도가 그려질 성싶은가. 나는 팔려고 붓을 든 것이 아니네.",
+      "responded": true,
+      "sourceRef": ["hokusai-001"]
+    },
+    {
+      "id": "issue-3",
+      "opponentClaim": "이제 나이도 많으니 붓을 놓고 쉬시오.",
+      "rebuttal": "늙어 붓을 놓으라? 이제야 겨우 이치를 알기 시작했는데. 하늘이 몇 해만 더 준다면 참된 화가가 될 것을.",
+      "responded": true,
+      "sourceRef": ["hokusai-006"]
+    },
+    {
+      "id": "issue-4",
+      "opponentClaim": "당신은 천재요. 그 재능이면 무엇이든 되오.",
+      "rebuttal": "천재라… 그런 말이 사람을 게으르게 만드는 게야. 나는 그저 그림에 미친 늙은이(画狂老人)일 뿐이네.",
+      "responded": true,
+      "sourceRef": ["hokusai-003"]
+    }
+  ]
+}

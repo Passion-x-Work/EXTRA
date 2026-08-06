@@ -85,7 +85,9 @@ function updateScene() {
     const series = tone === "meme" ? "Hip-NoBG_Gogh" : "NoBG_Gogh";
     fadePortrait(portrait, `/Assets/gogh/${series}-Phase0${ph}.webp`);
   } else {
+    // 이미지 미제작 인물(호쿠사이 등): CSS 테마 배경 폴백 + 초상 숨김
     sc.style.removeProperty("--scene-image");
+    if (portrait) { portrait.src = ""; portrait.style.opacity = "1"; }
   }
 }
 
