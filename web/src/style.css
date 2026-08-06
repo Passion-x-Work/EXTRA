@@ -289,18 +289,21 @@ button, select, input { font-family: inherit; }
 .dc-content { font-size: .82rem; color: var(--ink-soft); line-height: 1.5; margin: 4px 0; }
 .dc-src { font-size: .68rem; color: #9a9078; }
 
-/* 모바일(<760px): 위=인물(크게·진하게), 아래=채팅(로그+입력) 도킹.
-   인물이 채팅 바로 위에 붙고, 채팅은 하단 영역 안에서만 쌓이며 스크롤 → 인물 안 가려짐. */
+/* 모바일(<760px): 3단 배치 — 위=대화(말풍선), 가운데=인물 이미지, 맨 아래=입력창.
+   대화는 상단에서 스크롤, 인물은 세로 중앙에 노출, 입력창은 바닥 고정. */
 @media (max-width: 759px) {
-  /* 상단 인물 밴드: 하단(발끝)이 채팅과 맞닿게 */
+  /* 인물: 화면 세로 중앙 밴드(대화와 입력 사이) */
   #char-panel {
-    position: absolute; inset: 0 0 auto 0; width: 100%; height: 52%;
+    position: absolute; left: 0; right: 0; top: 40vh; height: 42vh;
     justify-content: center; align-items: flex-end;
-    z-index: 1; opacity: 1;  /* 베일 위로 올려 또렷하게 */
+    z-index: 0; opacity: 1;
   }
-  #char-portrait { width: 72%; max-height: 100%; object-position: bottom center; }
-  /* 채팅은 하단 48%에 도킹 → 인물 바로 아래. 로그는 이 안에서 스크롤 */
-  .chat-main { width: 100%; height: 48%; align-self: flex-end; }
+  #char-portrait { width: 64%; max-height: 100%; object-position: center bottom; }
+  .chat-main { width: 100%; height: 100%; }
+  /* 상단: 대화 로그(고정 높이 안에서 스크롤) → 인물 위로 넘치지 않음 */
+  #log { flex: 0 1 auto; max-height: 26vh; }
+  /* 입력창을 맨 아래로 밀어 인물 밴드와 겹치지 않게 */
+  #turn-form { margin-top: auto; }
 }
 
 /* ══════════ 데스크톱: 중앙 문서 프레임 ══════════ */
