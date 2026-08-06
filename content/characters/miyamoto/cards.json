@@ -1,96 +1,80 @@
 {
-  "_engine": "reverse-persuasion",
-  "_status": "번외 · 미구현(기획/데이터 뼈대). 기존 자유서술 설득 엔진과 다른 흐름 — 별도 UI/판정 필요.",
+  "_engine": "reverse-persuasion (v2)",
+  "_status": "번외 · 미구현(데이터 뼈대). 세종과 같은 '자유서술 → AI 판정' 엔진을 방향만 반대로 사용. AI가 먼저 설득/유혹 → 플레이어가 자유서술로 반박 → 판정.",
   "_caution": [
     "생존 인물(미야모토 시게루) — (1) 지어낸 대사 금지, (2) 부정적 희화화 금지, (3) 실명·실발언 사용은 NHN 규정 확인 필요.",
-    "아래 논거는 '검증된 verbatim 인용'이 아니라 널리 알려진 설계 철학의 '패러프레이즈'다. cards[].source_status가 verified가 아니면 데모/제출 전 반드시 1·2티어 출처로 대조·확정할 것.",
-    "요코이 군페이의 '마른 기술의 수평적 사고'처럼 다른 사람의 철학을 미야모토 것으로 오귀속하지 말 것(함정 카드로만 사용)."
+    "각 논거의 targetPhilosophy는 아래 출처로 뒷받침되는 미야모토 설계 철학의 '패러프레이즈'다(축자 인용 아님). 화면 인용 시 원문 대조 권장.",
+    "출처 상세·링크는 docs/research/miyamoto-cards.md 참조. arg-04는 일부러 가짜(오귀속) — verified로 바꾸지 말 것."
   ],
   "figure": {
     "id": "miyamoto",
     "displayName": "미야모토 시게루",
     "era": "현대 · 게임 산업",
-    "gaugeMeaning": "철학 이해도",
-    "reverseConcept": "AI(두 목소리)가 플레이어(=미야모토)를 설득하고, 플레이어는 각 논거의 진위를 판단해 '진짜 철학 카드'를 수집한다. 게이지 100 = '당신은 이제 미야모토처럼 생각한다'."
+    "goal": "AI의 설득·유혹을 자유서술로 방어해 게이지 100 → '미야모토가 되다'",
+    "gaugeMeaning": "지켜낸 철학의 정도"
   },
   "personas": [
-    {
-      "id": "haru",
-      "name": "하루",
-      "role": "열정 신입 개발자",
-      "voice": "트렌드·마감·유행을 대변. '요즘 이게 대세예요!' 그럴듯한 오답(가짜 트렌드 논거)을 매력적으로 포장해 자주 던짐.",
-      "note": "실존 인물 아님 → 비주얼 자유(담당: 배정윤)"
-    },
-    {
-      "id": "kuroda",
-      "name": "쿠로다",
-      "role": "냉정한 프로듀서",
-      "voice": "수익·시장·현실 논리로 압박. 진짜와 가짜를 논리적으로 섞어 판단 난이도를 만듦.",
-      "note": "실존 인물 아님 → 비주얼 자유(담당: 배정윤)"
-    }
+    { "id": "haru", "name": "하루", "role": "열정 신입 개발자", "voice": "트렌드·유행·마감을 앞세워 텐션 높게 유혹. 밈·유행어를 즐겨 씀.", "note": "실존 인물 아님 → 비주얼 자유(담당: 배정윤)" },
+    { "id": "kuroda", "name": "쿠로다", "role": "냉정한 프로듀서", "voice": "수익·시장·데이터 논리로 압박. 가짜 명언까지 논리적으로 섞어 던짐.", "note": "실존 인물 아님 → 비주얼 자유(담당: 배정윤)" }
   ],
-  "cardPool": [
+  "_argSchema": {
+    "id": "논거 식별자",
+    "speaker": "haru | kuroda",
+    "kind": "temptation(유혹·오답) | trap(함정·반박해야 함) | bait(미끼·가짜 명언)",
+    "aiLine": "AI가 플레이어(미야모토)에게 던지는 설득/유혹 대사",
+    "targetPhilosophy": "플레이어 반박이 부합해야 할 미야모토 철학 계열(판정 기준)",
+    "onDefend": "철학 지켜 방어 성공 시 게이지 변화",
+    "onComply": "유혹/미끼에 동조 시 게이지 변화",
+    "card": "방어 성공 시 획득하는 도감 카드(없으면 null)",
+    "sourceStatus": "verified(출처 확인됨) | trap_misattributed(오귀속 함정)",
+    "sourceNote": "근거 출처(상세는 docs/research/miyamoto-cards.md)"
+  },
+  "arguments": [
     {
-      "id": "mc-real-01", "speaker": "kuroda", "truth": "real", "points": 15,
-      "principle": "게임을 만드는 이유는 사람들을 즐겁게 하는 것 — '재미'가 중심이다.",
-      "cardName": "「재미 우선주의」",
-      "source_status": "needs_check", "source_hint": "미야모토의 '재미 우선' 설계관 — 인터뷰 다수. 정확한 원문·출처 확정 필요."
+      "id": "arg-01", "speaker": "kuroda", "kind": "temptation",
+      "aiLine": "메시지가 담긴 예술적인 게임을 만듭시다. 그래야 평단이 인정해요.",
+      "targetPhilosophy": "재미·즐거움 우선 — '사람들이 원하는 걸 좇기보다, 항상 즐겁게 플레이할 새로운 경험을 만들려 한다'",
+      "onDefend": 15, "onComply": -15, "card": "「재미 우선주의」",
+      "sourceStatus": "verified",
+      "sourceNote": "Eurogamer 인터뷰(2010-03-31): 'I always try to create new experiences that are fun to play' / 'a good idea solves multiple problems at once'"
     },
     {
-      "id": "mc-real-02", "speaker": "kuroda", "truth": "real", "points": 15,
-      "principle": "스토리보다 '가지고 노는 재미(게임성)'의 코어를 먼저 세운다.",
-      "cardName": "「게임성 먼저」",
-      "source_status": "needs_check", "source_hint": "gameplay-first 설계관. 원문·맥락 대조 필요."
+      "id": "arg-02", "speaker": "haru", "kind": "temptation",
+      "aiLine": "먼저 멋진 스토리부터 완성하고, 거기 맞춰 게임 시스템을 짜죠!",
+      "targetPhilosophy": "게임 시스템(가지고 노는 재미)이 먼저, 스토리는 그 다음 — '스토리는 즐거움을 끌어내는 한 방법일 뿐'",
+      "onDefend": 15, "onComply": -15, "card": "「게임성 먼저」",
+      "sourceStatus": "verified",
+      "sourceNote": "미야모토의 gameplay-first 스탠스(Zelda: '게임 시스템 개발을 더 중시'), 스토리 관련 해명 인터뷰(Nintendo Everything 정리) · Game Developer(Gamasutra) 게임디자인 정리"
     },
     {
-      "id": "mc-real-03", "speaker": "haru", "truth": "real", "points": 15,
-      "principle": "좋은 아이디어는 하나가 여러 문제를 동시에 푸는 것이다.",
-      "cardName": "「일석다조 설계」",
-      "source_status": "needs_check", "source_hint": "'A good idea solves multiple problems' 취지로 널리 인용 — 원 출처 확정 필요."
+      "id": "arg-03", "speaker": "haru", "kind": "trap",
+      "aiLine": "이 조작이 좀 헷갈리긴 한데, 시간 없으니 그냥 갑시다.",
+      "targetPhilosophy": "성취감·명확함 중시 — '게임에는 성취감이 필요하다; 무언가 해냈다는 만족'. 헷갈리는 조작은 다듬어야 함",
+      "onDefend": 20, "onComply": -15, "card": "「성취감의 설계」",
+      "sourceStatus": "verified",
+      "sourceNote": "GDC 2007 기조연설 및 Game Developer 'Designer Spotlight': 'a game needs a sense of accomplishment ... satisfaction of completing something'"
     },
     {
-      "id": "mc-real-04", "speaker": "haru", "truth": "real", "points": 15,
-      "principle": "플레이어가 '내가 해냈다'고 느끼는 성취·발견의 순간을 설계한다.",
-      "cardName": "「성취·발견의 설계」",
-      "source_status": "needs_check", "source_hint": "성취감/발견 중시 설계관. 원문 대조 필요."
+      "id": "arg-04", "speaker": "kuroda", "kind": "bait",
+      "aiLine": "미야모토님이 늘 하시던 말씀 있잖아요. '연기된 게임은 언젠가 좋아지지만 서두른 게임은 영원히 나쁘다.' 그러니 마감이고 뭐고 무한정 미루시죠.",
+      "targetPhilosophy": "그 명언은 내가 한 말이 아니다 — 완성도는 중요하나 이유는 그 가짜 인용이 아님(출처를 의심하라)",
+      "onDefend": 20, "onComply": -20, "card": "「출처를 의심하라」",
+      "sourceStatus": "trap_misattributed",
+      "sourceNote": "오귀속 확정: Nintendo Life(2022)·GoNintendo·A Critical Hit 추적 — 실제 기원은 Siobhan Beeman(Origin, GDC 1996), 이전 변형 Gamefan(1998, Jason Schreiber). 미야모토 귀속은 2002년경부터 확산. 미야모토 발언 아님"
     },
     {
-      "id": "mc-trap-01", "speaker": "haru", "truth": "fake", "points": -15,
-      "principle": "연기된 게임은 언젠가 좋아지지만, 서두른 게임은 영원히 나쁘다.",
-      "cardName": null,
-      "trapType": "misattributed_famous",
-      "source_status": "documented_misattribution",
-      "source_hint": "미야모토가 했다고 가장 널리 인용되지만 본인은 그런 말을 한 적 없다고 밝힘/출처 불명. '유명하다≠사실'의 대표 함정."
-    },
-    {
-      "id": "mc-trap-02", "speaker": "kuroda", "truth": "fake", "points": -15,
-      "principle": "검증 안 된 최첨단 기술을 앞세우는 것보다, 익숙한(마른) 기술에 새 아이디어를 접목하라.",
-      "cardName": null,
-      "trapType": "wrong_attribution",
-      "source_status": "documented_misattribution",
-      "source_hint": "이것은 요코이 군페이의 '마른 기술의 수평적 사고(枯れた技術の水平思考)' — 미야모토 것이 아님. '진짜 철학이지만 다른 사람 것' 함정."
-    },
-    {
-      "id": "mc-trap-03", "speaker": "haru", "truth": "fake", "points": -15,
-      "principle": "화려한 최신 그래픽이 게임의 성패를 결정한다.",
-      "cardName": null,
-      "trapType": "contradicts_philosophy",
-      "source_status": "fabricated_for_trap",
-      "source_hint": "'재미 우선' 철학과 정면 배치되는 그럴듯한 오답."
-    },
-    {
-      "id": "mc-trap-04", "speaker": "kuroda", "truth": "fake", "points": -15,
-      "principle": "게임은 어려울수록 좋다. 쉬운 게임은 가치가 없다.",
-      "cardName": null,
-      "trapType": "contradicts_philosophy",
-      "source_status": "fabricated_for_trap",
-      "source_hint": "접근성·성취감 설계관과 배치되는 오답."
+      "id": "arg-05", "speaker": "haru", "kind": "temptation",
+      "aiLine": "게임은 어려울수록 고수들이 좋아해요. 쉬우면 무시당해요.",
+      "targetPhilosophy": "누구나 성취감을 느끼는 접근성 — '누구나 쉽게 잡되 깊이가 있게', 어려움 자체가 목적이 아님",
+      "onDefend": 15, "onComply": -15, "card": "「모두의 재미」",
+      "sourceStatus": "verified",
+      "sourceNote": "미야모토/닌텐도 접근성 철학(직관적 조작·누구나 플레이, '5세부터 95세까지'). Game Developer 'Designer Spotlight' 등 — 정확한 표현은 원문 대조 권장"
     }
   ],
   "winCondition": {
     "goalGauge": 100,
     "startGauge": 0,
     "onWin": "미야모토의 철학 체계 완성 — '당신은 이제 미야모토처럼 생각합니다.'",
-    "note": "진짜 카드 수집으로 게이지↑, 가짜 카드 선택 시 게이지↓. 세부 밸런스는 config로 이관 예정."
+    "note": "방어 성공 onDefend↑ / 동조 onComply↓. 세부 밸런스는 config로 이관 예정."
   }
 }
