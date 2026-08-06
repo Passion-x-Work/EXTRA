@@ -1,37 +1,55 @@
 # EXTRA — 폴더 및 문서 안내
 
+> 실제 저장소 기준(2026-08 최신). 인물은 세종 · 반고흐 · **호쿠사이** 3종(+ 미야자키 콜라보 비전).
+
 ## 폴더 구조
     EXTRA/
-    ├─ client/     # 프론트엔드 (UI, 화면 흐름 showScene)
-    ├─ server/     # 백엔드
-    │   ├─ engine/ # 게임 규칙 판정 (신념게이지, 설득 성공/실패)
-    │   ├─ rag/    # 사료 검색 (RAG)
-    │   └─ ai/     # Claude API 호출·프롬프트 구성
+    ├─ web/            # 프론트엔드 (Vite 정적)
+    │   ├─ index.html      # 화면: 지도 → 대화 → 결과 → 사료 도감
+    │   ├─ src/app.js      # 화면 흐름·게이지·힌트·연출(비주얼 노벨)
+    │   ├─ src/style.css   # 인물별 씬 테마(data-theme) · 반응형
+    │   └─ Assets/         # 인물 이미지(배경·Phase별 표정) — 담당: 배정윤
+    ├─ server/         # 백엔드 (로컬 프록시 · 판정 로직)
+    │   ├─ ai/judge.js         # 판정: 등급+대사 (offline/gpt/claude)
+    │   ├─ engine/applyGrade.js# 게임 규칙(게이지·턴·승패) — 결정론
+    │   ├─ rag/retrieve.js     # 사료 검색(쟁점–sourceRef 직접 매핑)
+    │   ├─ index.mjs           # 로컬 개발 프록시 서버
+    │   └─ loadEnv.mjs         # .env 로더(시스템 env 오버라이드)
+    ├─ api/judge.js    # Vercel 서버리스 판정 함수(배포용)
+    ├─ config/
+    │   └─ difficulty.json # 난이도·게이지·등급점수·힌트(숫자는 여기)
     ├─ content/
-    │   └─ characters/
-    │       └─ sejong/   # 인물별 데이터 (폴더 복사로 인물 추가)
-    ├─ docs/       # 프로젝트 문서
-    │   └─ research/     # 인물별 사료 근거 원본
-    ├─ .gitignore
-    ├─ .env        # API 키 (git에 올리지 않음)
+    │   └─ characters/     # 인물별 데이터(폴더 추가 = 인물 추가)
+    │       ├─ sejong/     ├─ vangogh/     └─ hokusai/
+    ├─ test/smoke.mjs  # 판정·설정 스모크 테스트
+    ├─ docs/           # 프로젝트 문서 (+ research/ 사료 근거)
+    ├─ vercel.json · vite.config.js · package.json
+    ├─ .env            # API 키 (git 제외) · .env.example (빈 템플릿)
     └─ README.md
 
 ## 문서 안내 (docs/)
-| 문서 | 위치 | 내용 |
-|------|------|------|
-| 프로젝트 개요 | README.md | 게임 소개·등장 인물·게임 흐름·기술 구성 (제일 먼저 볼 것) |
-| 확장 비전 | docs/VISION.md | 교육 축 + IP 콜라보 축, 설계 의도 |
-| 폴더·문서 안내 | docs/STRUCTURE.md | 이 문서. 폴더 구조와 문서 지도 |
-| 사료 정책 | docs/RESEARCH_POLICY.md | 출처 티어 기준, 데이터 원칙, 갱신 정책 |
-| 세종 사료 원본 | docs/research/sejong-sources.md | 세종 리서치 원본 (타임라인·쟁점표·사료 조각·성격 근거) |
+| 문서 | 내용 |
+|------|------|
+| README.md | 프로젝트 개요 (제일 먼저) |
+| docs/GAME_INTRO.md | 게임 소개서 — 등장 인물·플레이·특징 |
+| docs/AI_TECH.md | AI 기술 문서 — 에이전트 설계·디렉팅 명세 코어 |
+| docs/VISION.md | 확장 비전 — 교육 축 + IP 콜라보 축 |
+| docs/STRUCTURE.md | 이 문서 — 폴더 구조·문서 지도 |
+| docs/RESEARCH_POLICY.md | 사료 티어 기준·데이터 원칙 |
+| docs/DEPLOY.md | Vercel 배포 가이드 (담당: 배정윤) |
+| docs/TEAM_ROLES.md | 팀원 역할 기술서 |
+| docs/research/*-sources.md | 인물별 사료 근거 원본(세종·반고흐·호쿠사이) |
 
-## 인물 폴더 안의 파일 4종 (content/characters/<인물>/)
-- **profile.json** — 인물의 성격·말투·신념게이지 초기값
-- **knowledge.json** — RAG 검색용 검증된 사료 조각 (출처 포함)
-- **debate.json** — 설득 쟁점 표 (쟁점 5개 + 3모드: strict / reward / mixed)
-- **scenario.json** — 화면 흐름 (인트로 · 오프닝 · 승리/실패 결과)
+## 인물 폴더 안의 파일 4종 (content/characters/&lt;인물&gt;/)
+- **profile.json** — 성격·말투·**설득 가치 축**(통하는_가치 / 안_통하는_것 / 역효과 / 시대착오) · 게이지 초기값
+- **knowledge.json** — RAG용 검증된 사료 조각(출처·티어 포함)
+- **debate.json** — 설득 쟁점 표(쟁점 + 3모드: strict / reward / mixed)
+- **scenario.json** — 화면 흐름(인트로 · 오프닝(정통/밈) · 승리/실패)
 
 ## 인물 추가 방법
-`content/characters/` 안에 인물 폴더를 복사하고, 위 4개 JSON의 내용만 교체한다.
-사료 근거는 docs/research/ 아래에 인물별 문서로 추가한다.
-코드 수정 없이 인물이 확장된다.
+1. `content/characters/`에 인물 폴더 복사 → 위 4개 JSON 교체
+2. `config/difficulty.json`의 `characters`·`hint_unlock.order`에 항목 추가
+3. `docs/research/`에 사료 근거 문서 추가
+4. `web/`에서 지도 유적 버튼(`data-char`) + 씬 테마 연결
+
+판정 엔진은 `profile.json`의 가치 축을 범용으로 읽으므로 **인물 추가에 판정 코드 수정은 없다.**
