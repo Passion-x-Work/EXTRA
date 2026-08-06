@@ -271,12 +271,13 @@ async function checkHealth() {
     const res = await fetch("/api/health");
     if (!res.ok) throw new Error("HTTP " + res.status);
     const h = await res.json();
-    // 현재 선택된 provider의 키가 서버에 없으면 사용 가능한 쪽으로 전환
-    if (sel.value === "gpt" && !h.providers?.gpt) sel.value = h.providers?.claude ? "claude" : "offline";
-    else if (sel.value === "claude" && !h.providers?.claude) sel.value = h.providers?.gpt ? "gpt" : "offline";
+    // 현재 선택된 provider의 키가 서버에 없으면 사용 가능한 쪽으로 전환.
+    // (오프라인은 UI 선택지가 아니라 비상 폴백 — getVerdict의 catch가 자동 처리)
+    if (sel.value === "gpt" && !h.providers?.gpt && h.providers?.claude) sel.value = "claude";
+    else if (sel.value === "claude" && !h.providers?.claude && h.providers?.gpt) sel.value = "gpt";
   } catch (_) {
-    sel.value = "offline"; // 프록시 서버 미실행 → 오프라인 판정으로
-    console.warn("[EXTRA] 판정 프록시(:8787) 응답 없음 → 오프라인 판정 모드");
+    // 프록시 서버 미실행 → 드롭다운은 그대로 두고, 판정 시 오프라인으로 자동 폴백
+    console.warn("[EXTRA] 판정 프록시 응답 없음 → 오프라인 판정으로 폴백");
   }
 }
 
