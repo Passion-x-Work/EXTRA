@@ -37,6 +37,7 @@
 | docs/STRUCTURE.md | 이 문서 — 폴더 구조·문서 지도 |
 | docs/RESEARCH_POLICY.md | 사료 티어 기준·데이터 원칙 |
 | docs/DEPLOY.md | Vercel 배포 가이드 (담당: 배정윤) |
+| docs/ASSETS_GUIDE.md | 캐릭터 이미지 파일명·규격 규약 (담당: 배정윤) |
 | docs/TEAM_ROLES.md | 팀원 역할 기술서 |
 | docs/research/*-sources.md | 인물별 사료 근거 원본(세종·반고흐·호쿠사이) |
 

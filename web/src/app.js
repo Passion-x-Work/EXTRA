@@ -57,38 +57,41 @@ function renderGauge() {
 // 신념 게이지 → 인물 단계(Phase 1~5). 설득될수록 표정/자세가 바뀜.
 const phaseFromGauge = (g) => Math.max(1, Math.min(5, Math.ceil((g || 0) / 20) || 1));
 
-// 캐릭터 이미지 페이드 전환(같은 이미지는 스킵)
+// 캐릭터 이미지 페이드 전환(같은 이미지는 스킵). 파일이 없으면(에셋 미제작) 초상 숨김.
 function fadePortrait(el, newSrc) {
   if (!el || el.getAttribute("src") === newSrc) return;
   el.style.opacity = "0";
   setTimeout(() => {
     el.onload = () => { el.style.opacity = "1"; };
+    el.onerror = () => { el.onerror = null; el.src = ""; }; // 404 → [src=""]로 숨김
     el.src = newSrc;
   }, 300);
 }
+
+// 인물별 에셋 규약(파일명은 docs/ASSETS_GUIDE.md). 새 인물은 여기 한 줄만 추가하면 됨.
+//   dir     : /Assets/<dir>/ 하위(웹 서빙 경로, 파일은 web/public/Assets/<dir>/, 확장자 .webp)
+//   bgDark  : 게이지 ≤50 배경 파일명(확장자 제외) · bgLight: >50 배경
+//   classic : 정통 말투 초상 시리즈 접두 · meme: 밈 말투 초상 시리즈 접두
+//   초상 파일명 = `<series>-Phase0N.webp` (N=1~5). 파일이 없으면 자동으로 숨겨짐(onerror).
+const ASSETS = {
+  sejong:  { dir: "Sejong", bgDark: "BG02",             bgLight: "BG01",      classic: "Front-NoBG", meme: "Hip-Front-NoBG" },
+  vangogh: { dir: "gogh",   bgDark: "Gogh-BG02_night",  bgLight: "Gogh-BG01", classic: "NoBG_Gogh",  meme: "Hip-NoBG_Gogh" },
+  hokusai: { dir: "Hokusai", bgDark: "Hokusai-BG02",    bgLight: "Hokusai-BG01", classic: "Hokusai", meme: "Hip-Hokusai" },
+};
 
 // 배경(게이지 연동: ≤50 어두움 → >50 밝음) + 캐릭터(톤별 시리즈 × Phase별 표정)
 function updateScene() {
   const sc = $("scr-chat");
   const portrait = $("char-portrait");
   const ph = phaseFromGauge(state.gauge);
-  const bright = state.gauge > 50;
-
-  if (charId === "sejong") {
-    const bg = bright ? "/Assets/Sejong/BG01.webp" : "/Assets/Sejong/BG02.webp";
-    sc.style.setProperty("--scene-image", `url("${bg}")`);
-    const series = tone === "meme" ? "Hip-Front-NoBG" : "Front-NoBG";
-    fadePortrait(portrait, `/Assets/Sejong/${series}-Phase0${ph}.webp`);
-  } else if (charId === "vangogh") {
-    const bg = bright ? "/Assets/gogh/Gogh-BG01.webp" : "/Assets/gogh/Gogh-BG02_night.webp";
-    sc.style.setProperty("--scene-image", `url("${bg}")`);
-    const series = tone === "meme" ? "Hip-NoBG_Gogh" : "NoBG_Gogh";
-    fadePortrait(portrait, `/Assets/gogh/${series}-Phase0${ph}.webp`);
-  } else {
-    // 이미지 미제작 인물(호쿠사이 등): CSS 테마 배경 폴백 + 초상 숨김
-    sc.style.removeProperty("--scene-image");
-    if (portrait) { portrait.src = ""; portrait.style.opacity = "1"; }
-  }
+  const a = ASSETS[charId];
+  if (!a) { sc.style.removeProperty("--scene-image"); if (portrait) { portrait.src = ""; } return; }
+  // 배경: 파일이 없으면 CSS --scene-fallback(테마 그라디언트)이 자동으로 비쳐 보임.
+  const bg = (state.gauge > 50 ? a.bgLight : a.bgDark);
+  sc.style.setProperty("--scene-image", `url("/Assets/${a.dir}/${bg}.webp")`);
+  // 초상: 톤별 시리즈 × Phase. 파일 없으면 fadePortrait의 onerror가 숨김 처리.
+  const series = tone === "meme" ? a.meme : a.classic;
+  fadePortrait(portrait, `/Assets/${a.dir}/${series}-Phase0${ph}.webp`);
 }
 
 // 설득의 축 진행 표시: 찾기 전엔 이름 가림(숨은조건 추리 유지), 커버하면 공개
