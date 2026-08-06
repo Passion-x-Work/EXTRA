@@ -92,17 +92,18 @@ export function judgeOffline(input, character, opts = {}) {
   if (anti.score > 0 && anti.score >= pro.score)
     return makeVerdict("불합치", meme ? react("neutral") : `${name}: "${anti.item.line}"`, [], false, anti.item.axis, input, "offline");
 
-  // 4. 통하는 가치 축
+  // 4. 통하는 가치 축 — 진전은 '새로운 축을 깊이 있게(키워드 2+)' 짚어야만.
   if (pro.score > 0) {
     const axis = pro.item.axis;
     const sources = srcOf(pro.item["근거_사료"]);
-    if (covered.has(axis)) // 반복 → 다양한 '이미 들었네'(귀한 사료 대사 반복 X)
-      return makeVerdict("부분", react("repeat"), sources, false, axis, input, "offline");
+    if (covered.has(axis)) // 이미 커버한 축 반복 → 진전 없음. '이미 들었네, 다른 근거는?'
+      return makeVerdict("불합치", react("repeat"), sources, false, axis, input, "offline");
     if (pro.score >= 2) { // 강한 새 축 → 정합, 사료 근거 대사 공개(축 잠금)
       const line = meme ? `${name}: "${pick(MEME.praise)} ${pro.item.line}"` : `${name}: "${pro.item.line}"`;
       return makeVerdict("정합", line, sources, false, axis, input, "offline");
     }
-    return makeVerdict("부분", react("weak"), [], false, null, input, "offline"); // 약한 매칭 → 더 깊이 요구
+    // 약한 단일 키워드 → 진전 없음(스팸 방지). 방향은 맞으니 '더 깊이' 요구.
+    return makeVerdict("불합치", react("weak"), [], false, null, input, "offline");
   }
 
   // 5. 매칭 없음

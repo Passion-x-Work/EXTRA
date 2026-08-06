@@ -40,12 +40,17 @@ const win = play([
 ok(win.status === "WIN", `승리 도달 (게이지 ${win.gauge}, 등급 ${resultBand(win.turn, cfg)})`);
 ok(win.coveredAxes.size >= 2, `여러 가치 축 커버 (${win.coveredAxes.size}개)`);
 
-console.log("\n[2] 같은 축을 반복하면 잘 안 통함(부분)");
+console.log("\n[2] 같은 축을 반복하면 진전 없음(불합치) — 스팸 방지");
 {
-  let s = initState(cfg, "sejong"); s.coveredAxes = new Set();
   const a = judgeOffline("백성의 억울함을 하소연하게 해야 합니다", character, { mode: "mixed", cfg, covered: [] });
   const b = judgeOffline("백성이 억울함을 하소연해야 합니다", character, { mode: "mixed", cfg, covered: [a.matchedIssue] });
-  ok(a.matchedIssue && b.grade === "부분", `첫 축=${a.grade}, 반복=${b.grade}`);
+  ok(a.matchedIssue && a.grade === "정합" && b.grade === "불합치", `첫 축=${a.grade}, 반복=${b.grade}`);
+}
+
+console.log("\n[6] 단일 키워드 스팸은 이기지 못함(6연속 불합치 → 패배)");
+{
+  const spam = play(Array(6).fill("백성"));
+  ok(spam.status === "LOSE", `스팸 결과=${spam.status} (게이지 ${spam.gauge})`);
 }
 
 console.log("\n[3] 시대착오 → 불합치");
