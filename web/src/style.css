@@ -295,4 +295,32 @@ button, select, input { font-family: inherit; }
 @media (prefers-reduced-motion: reduce) {
   .gauge-fill, .seal.stamped { transition: none; animation: none; }
   .seal.stamped { transform: rotate(-9deg) scale(1); opacity: 1; }
+  #scr-chat.shake { animation: none; }
 }
+
+/* ── 사료 베끼기 응징 연출 (화면 깜빡 + 흔들림 + 토스트) ── */
+#scr-chat > .parrot-flash {
+  position: absolute; inset: 0; z-index: 30; pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 45%, rgba(168,50,42,0) 32%, rgba(168,50,42,.5) 100%),
+    rgba(255,64,52,.26);
+  animation: parrotFlash .6s ease-out forwards;
+}
+@keyframes parrotFlash { 0% { opacity: 0; } 15% { opacity: 1; } 100% { opacity: 0; } }
+#scr-chat.shake { animation: parrotShake .5s ease-in-out; }
+@keyframes parrotShake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-8px); } 40% { transform: translateX(7px); }
+  60% { transform: translateX(-5px); } 80% { transform: translateX(3px); }
+}
+#scr-chat > .parrot-toast {
+  position: absolute; left: 50%; top: 17%; transform: translateX(-50%);
+  z-index: 31; pointer-events: none; text-align: center; max-width: 82%;
+  background: rgba(38,21,17,.95); color: #ffe9c7;
+  border: 1px solid #a8322a; border-radius: 12px; padding: 12px 22px;
+  box-shadow: 0 12px 34px rgba(0,0,0,.5); font-weight: 800; letter-spacing: .01em;
+  animation: parrotToastIn .3s ease-out;
+}
+#scr-chat > .parrot-toast small { display: block; margin-top: 5px; font-weight: 500; font-size: .82em; color: #e7c8a0; }
+#scr-chat > .parrot-toast.out { opacity: 0; transition: opacity .4s ease; }
+@keyframes parrotToastIn { from { opacity: 0; transform: translate(-50%, -10px); } to { opacity: 1; transform: translate(-50%, 0); } }

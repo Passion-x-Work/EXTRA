@@ -18,6 +18,8 @@ const DIFF_MODE = { easy: "reward", mid: "mixed", hard: "strict" };
 const DIFF_START = { easy: 15, mid: 0, hard: -8 };
 const $ = (id) => document.getElementById(id);
 let state, charId, tone = "classic", firstInputSaved = "", difficulty = "mid";
+let snaps = [];              // 턴별 상태 스냅샷 스택(베끼기 응징 = 되돌리기용)
+const PARROT_ROLLBACK = 2;   // 사료 베끼기 감지 시 되돌릴 턴 수
 
 // ── 사료 도감(localStorage) ──
 const DOGAM_KEY = "extra_dogam_v1";
@@ -153,6 +155,7 @@ function startGame(id) {
   renderHintBtn();
   updateScene();
   addLine(scenario.openingLines?.[tone] || scenario.openingLines?.classic || "…", "npc");
+  snaps = [snapshot()]; // 시작(턴0) 스냅샷 = 되돌리기 하한
   show("scr-chat");
   $("turn-input").focus();
 }
@@ -302,12 +305,91 @@ async function getVerdict(input, mode) {
   }
 }
 
+// ── 베끼기 응징: 사료 원문을 그대로 옮기면 통하지 않음 → 화면 깜빡 + 2턴 되돌림 ──
+// "낭독은 설득이 아니다." 사료를 자기 논거로 풀어 쓰게 강제한다.
+const normText = (s) => (s || "").toLowerCase().replace(/[\s\p{P}\p{S}]/gu, "");
+// 최장 공통 부분수열 길이(어미만 바꾼 복붙도 대부분 순서대로 남아 잡힘)
+function lcsLen(a, b) {
+  const n = a.length, m = b.length;
+  if (!n || !m) return 0;
+  let prev = new Uint16Array(m + 1), cur = new Uint16Array(m + 1);
+  for (let i = 1; i <= n; i++) {
+    for (let j = 1; j <= m; j++)
+      cur[j] = a[i - 1] === b[j - 1] ? prev[j - 1] + 1 : Math.max(prev[j], cur[j - 1]);
+    const t = prev; prev = cur; cur = t; cur.fill(0);
+  }
+  return prev[m];
+}
+// 입력이 어떤 사료 조각을 거의 그대로 옮겼는가(조각 길이의 70% 이상을 순서대로 재현 + 최소 22자)
+function isParroting(input) {
+  const ni = normText(input);
+  if (ni.length < 22) return false;
+  const frags = chars[charId]?.knowledge?.fragments || [];
+  for (const f of frags) {
+    const nf = normText(f.content);
+    if (nf.length < 24) continue;
+    const l = lcsLen(nf, ni);
+    if (l >= 22 && l / nf.length >= 0.7) return true;
+  }
+  return false;
+}
+
+// 현재 상태 스냅샷(엔진이 불변 객체를 반환하므로 얕은 복사 + 컬렉션만 새로 생성)
+function snapshot() {
+  return {
+    gauge: state.gauge, turn: state.turn, consecutiveBad: state.consecutiveBad, status: state.status,
+    hintIdx: state.hintIdx, hintsLeft: state.hintsLeft, baseBudget: state.baseBudget, bonusAvail: state.bonusAvail,
+    coveredAxes: new Set(state.coveredAxes), collected: new Set(state.collected),
+    history: state.history.slice(), turnLog: state.turnLog.slice(), firstInputSaved,
+  };
+}
+function restore(s) {
+  Object.assign(state, {
+    gauge: s.gauge, turn: s.turn, consecutiveBad: s.consecutiveBad, status: s.status,
+    hintIdx: s.hintIdx, hintsLeft: s.hintsLeft, baseBudget: s.baseBudget, bonusAvail: s.bonusAvail,
+    coveredAxes: new Set(s.coveredAxes), collected: new Set(s.collected),
+    history: s.history.slice(), turnLog: s.turnLog.slice(),
+  });
+  firstInputSaved = s.firstInputSaved;
+}
+
+function flashScreen() {
+  const sc = $("scr-chat");
+  const fx = document.createElement("div");
+  fx.className = "parrot-flash";
+  sc.appendChild(fx);
+  sc.classList.add("shake");
+  setTimeout(() => { fx.remove(); sc.classList.remove("shake"); }, 600);
+}
+function parrotToast() {
+  const sc = $("scr-chat");
+  const t = document.createElement("div");
+  t.className = "parrot-toast";
+  t.innerHTML = `✋ <b>베끼기는 통하지 않는다</b><br/><small>사료를 그대로 옮기지 말고, 네 논거로 설득하라 · 2턴 되돌림</small>`;
+  sc.appendChild(t);
+  setTimeout(() => { t.classList.add("out"); setTimeout(() => t.remove(), 400); }, 2200);
+}
+// 베끼기 응징 실행: 방금 입력을 잠깐 보여준 뒤 깜빡이고 2턴 전 상태로 복원
+function punishParrot(input) {
+  addLine("나: " + input, "me");
+  flashScreen();
+  parrotToast();
+  const target = Math.max(0, snaps.length - 1 - PARROT_ROLLBACK);
+  setTimeout(() => {
+    restore(snaps[target]);
+    snaps.length = target + 1;
+    retone();            // turnLog로 로그 재구성 → 베낀 줄 제거
+    renderGauge(); renderAxisTrack(); updateScene(); renderHintBtn();
+  }, 850);
+}
+
 async function onTurn(e) {
   e.preventDefault();
   const input = $("turn-input").value.trim();
   if (!input || state.status !== "CONTINUE") return;
-  if (!firstInputSaved) firstInputSaved = input;
   $("turn-input").value = "";
+  if (isParroting(input)) { punishParrot(input); return; }
+  if (!firstInputSaved) firstInputSaved = input;
   addLine("나: " + input, "me");
 
   const mode = DIFF_MODE[difficulty] || "mixed";
@@ -327,6 +409,8 @@ async function onTurn(e) {
   updateScene();
   maybeUnlockHint();
   renderHintBtn();
+
+  if (state.status === "CONTINUE") snaps.push(snapshot()); // 되돌리기용 턴 스냅샷
 
   // 종료 시: 인물의 마지막 대사를 읽을 시간을 준다 → ▶ 클릭 또는 7초 후 자동 진행
   if (state.status !== "CONTINUE") showEndGate();
