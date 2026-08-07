@@ -18,3 +18,10 @@ export function loadChar(id) {
     debate: readJson(`${b}/debate.json`),
   });
 }
+
+// 번외(역설득) 인물은 cards.json 사용(profile/knowledge 없음)
+const cardsCache = {};
+export function loadCards(id) {
+  if (cardsCache[id]) return cardsCache[id];
+  return (cardsCache[id] = readJson(`content/characters/${id}/cards.json`));
+}

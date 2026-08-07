@@ -2,6 +2,7 @@
 import cfg from "../../config/difficulty.json";
 import { initState, applyGrade, resultBand } from "../../server/engine/applyGrade.js";
 import { judgeOffline } from "../../server/ai/judge.js";
+import { openTurn, judgeRebuttal } from "../../server/engine/miyamotoEngine.js";
 
 // content/characters/<id>/*.json 전부 로드 → chars[id] = { profile, knowledge, debate, scenario }
 const modules = import.meta.glob("../../content/characters/*/*.json", { eager: true });
@@ -20,6 +21,13 @@ const $ = (id) => document.getElementById(id);
 let state, charId, tone = "classic", firstInputSaved = "", difficulty = "mid";
 let snaps = [];              // 턴별 상태 스냅샷 스택(베끼기 응징 = 되돌리기용)
 const PARROT_ROLLBACK = 2;   // 사료 베끼기 감지 시 되돌릴 턴 수
+
+// ── 번외(역설득) 세션 상태 ──
+// 게이지 밸런스는 잠정값(⚠️ Q1 배정윤 결정 대기). cards.winCondition으로 이관 예정.
+let rev = null;              // { cards, scenario, index, gauge, done }
+const REV_START = 40;        // 잠정 시작 게이지
+const REV_PASS = 60;         // 잠정: 논거 소진 시 이 이상이면 승리
+const isReverseChar = (id) => !!chars[id]?.cards;   // cards.json 있으면 역설득 인물
 
 // ── 사료 도감(localStorage) ──
 const DOGAM_KEY = "extra_dogam_v1";
@@ -129,9 +137,9 @@ const ASSETS = {
 function updateScene() {
   const sc = $("scr-chat");
   const portrait = $("char-portrait");
-  const ph = phaseFromGauge(state.gauge);
   const a = ASSETS[charId];
-  if (!a) { sc.style.removeProperty("--scene-image"); if (portrait) { portrait.src = ""; } return; }
+  if (!a || !state) { sc.style.removeProperty("--scene-image"); if (portrait) { portrait.src = ""; } return; } // 에셋 없음 or 역모드(state=null)
+  const ph = phaseFromGauge(state.gauge);
   // 배경: 파일이 없으면 CSS --scene-fallback(테마 그라디언트)이 자동으로 비쳐 보임.
   const bg = (state.gauge > 50 ? a.bgLight : a.bgDark);
   sc.style.setProperty("--scene-image", `url("/Assets/${a.dir}/${bg}.webp")`);
@@ -226,6 +234,8 @@ function startGame(id, resume = false) {
   $("char-name").textContent = profile.displayName;
   $("char-diff").textContent = scenario.timeLabel || DIFF_KO[profile.difficulty] || "";
   $("turn-input").placeholder = `${profile.displayName}에게 건넬 논거를 입력…`;
+  rev = null; // 정방향 시작 → 역모드 해제
+  $("axis-track").style.display = ""; $("hint-btn").style.display = ""; $("save-card").style.display = "";
   renderGauge();
   renderAxisTrack();
   renderHintBtn();
@@ -235,6 +245,95 @@ function startGame(id, resume = false) {
   snaps = [snapshot()]; // 시작(또는 복원) 스냅샷 = 되돌리기 하한
   show("scr-chat");
   $("turn-input").focus();
+}
+
+// ══════════ 번외: 역설득 흐름 (AI가 먼저 논거 → 반박 → 판정 → 다음 논거) ══════════
+function renderRevGauge() {
+  const g = Math.max(0, Math.min(100, rev.gauge));
+  $("gauge-fill").style.width = g + "%";
+  $("gauge-num").textContent = g;
+  $("turn-count").textContent = `논거 ${Math.min(rev.index + 1, rev.cards.arguments.length)}/${rev.cards.arguments.length}`;
+}
+
+function startReverse(id) {
+  charId = id;
+  rev = { cards: chars[id].cards, scenario: chars[id].scenario, index: 0, gauge: REV_START, done: false };
+  state = null; snaps = [];
+  $("log").innerHTML = "";
+  $("scr-chat").dataset.theme = id;
+  $("win-seal").classList.remove("stamped");
+  $("axis-track").style.display = "none"; // 역모드엔 축 트랙 없음
+  $("hint-btn").style.display = "none";   // MVP: 힌트 없음
+  $("turn-input").placeholder = "반박을 입력…";
+  $("turn-input").disabled = false;
+  $("turn-form").querySelector("button[type=submit]").disabled = false;
+  $("char-portrait").src = ""; // 이미지 대기(자동 숨김)
+  updateScene();
+  renderRevGauge();
+  const intro = rev.scenario?.intro?.[0];
+  if (intro) addLine(intro, "npc");
+  show("scr-chat");
+  revOpen(0);
+  $("turn-input").focus();
+}
+
+// AI 화자(하루/쿠로다)가 논거[index]를 던진다
+function revOpen(index) {
+  const t = openTurn(rev.cards, index);
+  if (!t) return revEnd(rev.gauge >= REV_PASS); // 논거 소진 → 잠정 통과선으로 판정
+  rev.index = index;
+  $("char-name").textContent = t.speaker;
+  $("char-diff").textContent = t.speakerRole || rev.scenario?.timeLabel || "";
+  addLine(`${t.speaker}: "${t.aiLine}"`, "npc");
+  renderRevGauge();
+}
+
+// 플레이어 반박 판정(프록시 → 실패 시 오프라인 폴백) + 게이지 반영
+async function onReverseTurn(e) {
+  e.preventDefault();
+  const input = $("turn-input").value.trim();
+  if (!input || !rev || rev.done) return;
+  $("turn-input").value = "";
+  addLine("나: " + input, "me");
+  const btn = $("turn-form").querySelector("button[type=submit]");
+  btn.disabled = true;
+  const provider = $("provider").value;
+  let r;
+  try {
+    const res = await fetch("/api/judgeReverse", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ charId, argIndex: rev.index, input, gauge: rev.gauge, provider }),
+    });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    r = await res.json();
+  } catch (_) {
+    r = await judgeRebuttal(rev.cards, rev.index, input, rev.gauge, { provider: "offline", mode: "reverse-persuasion" });
+  }
+  btn.disabled = false;
+  rev.gauge = r.gauge;
+  addLine(r.verdict.line, "npc");
+  addLine(r.defended ? `[방어 +${r.delta}]` : `[동조 ${r.delta}]`, "grade-tag");
+  if (r.cardWon) addLine(`🃏 ${r.cardWon} 획득`, "grade-tag");
+  renderRevGauge();
+  if (rev.gauge <= 0) return revEnd(false);
+  if (r.win) return revEnd(true);
+  const next = rev.index + 1;
+  if (next >= rev.cards.arguments.length) return revEnd(rev.gauge >= REV_PASS);
+  setTimeout(() => revOpen(next), 650); // 반응 읽을 시간
+}
+
+function revEnd(win) {
+  if (!rev) return;
+  rev.done = true;
+  const sc = rev.scenario || {};
+  $("result-title").textContent = win ? "철학을 지켰다" : "흔들렸다";
+  $("result-line").textContent = win ? (sc.winScene?.text || "") : (sc.loseScene?.text || "");
+  $("result-turns").textContent = `${Math.min(rev.index + 1, rev.cards.arguments.length)}논거`;
+  $("result-grade").textContent = win ? "정복" : "—";
+  $("result-cta").textContent = win ? (sc.winScene?.historicalNote || "") : (sc.loseScene?.encouragement || "");
+  $("result-cards").innerHTML = "";
+  $("save-card").style.display = "none"; // 역모드는 공유 카드 미지원(MVP)
+  show("scr-result");
 }
 
 function endGame() {
@@ -671,16 +770,21 @@ async function saveCard() {
   }, "image/png");
 }
 
-// 유적 클릭: 저장된 진행이 있으면 이어하기, 없으면 새로 시작
+// 유적 클릭: 역설득 인물(cards.json)이면 역모드, 아니면 정방향(저장 있으면 이어하기)
 document.querySelectorAll(".relic[data-char]").forEach((b) =>
-  b.addEventListener("click", () => startGame(b.dataset.char, !!loadSaves()[b.dataset.char]))
+  b.addEventListener("click", () => {
+    const id = b.dataset.char;
+    if (isReverseChar(id)) startReverse(id);
+    else startGame(id, !!loadSaves()[id]);
+  })
 );
-$("turn-form").addEventListener("submit", onTurn);
+// 폼 제출: 역모드 진행 중이면 역판정, 아니면 정방향
+$("turn-form").addEventListener("submit", (e) => { (rev && !rev.done) ? onReverseTurn(e) : onTurn(e); });
 $("hint-btn").addEventListener("click", () => unlockHint()); // 수동 힌트(예산 차감)
 $("save-card").addEventListener("click", saveCard);
-$("retry").addEventListener("click", () => { refreshMapSaves(); show("scr-map"); });
-// 뒤로가기: 진행 자동 저장 후 지도로
-$("back-map").addEventListener("click", () => { saveGame(); refreshMapSaves(); show("scr-map"); });
+$("retry").addEventListener("click", () => { rev = null; refreshMapSaves(); show("scr-map"); });
+// 뒤로가기: 진행 자동 저장 후 지도로 (역모드는 저장 없이 나감)
+$("back-map").addEventListener("click", () => { if (!rev) saveGame(); rev = null; refreshMapSaves(); show("scr-map"); });
 // 말투 슬라이딩 스위치(정통↔밈): 즉시 로그를 새 말투로 리렌더
 $("tone-toggle").addEventListener("click", () => {
   tone = tone === "classic" ? "meme" : "classic";

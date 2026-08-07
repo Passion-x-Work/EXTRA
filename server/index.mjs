@@ -4,7 +4,8 @@
 import "./loadEnv.mjs"; // .env 를 먼저 로드(시스템 환경변수 override)
 import { createServer } from "node:http";
 import { judge } from "./ai/judge.js";
-import { loadCfg, loadChar } from "./data.js";
+import { judgeRebuttal } from "./engine/miyamotoEngine.js";
+import { loadCfg, loadChar, loadCards } from "./data.js";
 
 const cfg = loadCfg();
 const PORT = process.env.PORT || 8787;
@@ -25,6 +26,25 @@ createServer(async (req, res) => {
         const verdict = await judge(input, character, { provider, mode: useMode, tone, cfg, covered });
         res.writeHead(200, { "content-type": "application/json" });
         res.end(JSON.stringify(verdict));
+      } catch (e) {
+        res.writeHead(500, { "content-type": "application/json" });
+        res.end(JSON.stringify({ error: String(e) }));
+      }
+    });
+    return;
+  }
+
+  // 번외(역설득) 판정: AI 화자의 논거[argIndex]에 대한 플레이어 반박을 판정
+  if (req.method === "POST" && req.url === "/api/judgeReverse") {
+    let raw = "";
+    req.on("data", (c) => (raw += c));
+    req.on("end", async () => {
+      try {
+        const { charId = "miyamoto", argIndex = 0, input, gauge = 0, provider } = JSON.parse(raw || "{}");
+        const cards = loadCards(charId);
+        const result = await judgeRebuttal(cards, argIndex, input, gauge, { provider, mode: "reverse-persuasion" });
+        res.writeHead(200, { "content-type": "application/json" });
+        res.end(JSON.stringify(result));
       } catch (e) {
         res.writeHead(500, { "content-type": "application/json" });
         res.end(JSON.stringify({ error: String(e) }));
