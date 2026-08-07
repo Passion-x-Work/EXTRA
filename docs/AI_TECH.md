@@ -54,10 +54,10 @@ AI(또는 오프라인 휴리스틱)는 아래 **고정 스키마**만 반환한
 | provider | 용도 |
 |---|---|
 | `offline` | **비상 폴백 전용**(플레이어 선택지 X). 키/네트워크 죽어도 안 깨짐 — 심사자 실행 보장 |
-| `gpt` | OpenAI function calling 구조화 판정 (개발·테스트용) |
-| `claude` | Anthropic tool use 구조화 판정 (**제출·배포 기본**) |
+| `gpt` | OpenAI function calling 구조화 판정 (**제출·배포 기본**) |
+| `claude` | Anthropic tool use 구조화 판정 (선택 — 비교/대체용) |
 
-- **전략: 제출·배포 = Claude 전용**(NHN 클로드 정합) / **개발·테스트 = GPT+Claude 둘 다** 전환 비교.
+- **전략: 제출·배포 = GPT 기본**(데모 대사 등급을 GPT로 검증·확정 → `docs/DEMO_SCRIPT.md`) / Claude는 provider 인터페이스만 지키면 언제든 대체 가능.
 - `judge()` 디스패처가 provider를 고르고, **키 없음/오류 시 오프라인으로 폴백**(재시도 1회 후).
 - 키는 **서버(프록시/서버리스)에만.** 클라이언트 노출 금지. (`server/index.mjs` 로컬 · `api/judge.js` Vercel)
 

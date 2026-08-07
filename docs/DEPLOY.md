@@ -18,15 +18,15 @@ vercel               # 프로젝트 연결(첫 배포). 프롬프트는 기본�
 ```
 
 ## Provider 전략
-- **제출·배포 = Claude 전용** (NHN 클로드 도입·심사위원 상용 도구와 정합). 프로덕션 `AI_PROVIDER=claude`.
-- **개발·테스트 = GPT + Claude 둘 다** (드롭다운에서 전환하며 비교). 로컬 `.env`에 둘 다 키 넣어 테스트.
+- **제출·배포 = GPT 기본** (데모 대사 등급을 GPT로 검증·확정 — `docs/DEMO_SCRIPT.md`). 프로덕션 `AI_PROVIDER=gpt`.
+- **Claude는 선택 대체** (드롭다운에서 전환·비교 가능). provider 인터페이스만 지키면 언제든 교체.
 - 플레이어 선택지엔 오프라인 없음(비상 폴백으로만 자동 동작 — 키/네트워크 죽어도 심사 중 안 깨짐).
 
 ## 환경변수 (Vercel 대시보드 또는 CLI)
 ```bash
-vercel env add AI_PROVIDER       # 배포는 claude
-vercel env add CLAUDE_API_KEY    # 유효한 Claude 키 (필수)
-vercel env add OPENAI_API_KEY    # (선택) 테스트/비교용 GPT 키
+vercel env add AI_PROVIDER       # 배포는 gpt
+vercel env add OPENAI_API_KEY    # 유효한 GPT 키 (필수)
+vercel env add CLAUDE_API_KEY    # (선택) 비교/대체용 Claude 키
 ```
 > 키가 없거나 오류여도 게임은 **오프라인 폴백으로 동작**한다(심사자 실행 보장). 실 AI 판정만 키 필요.
 

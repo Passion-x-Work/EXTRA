@@ -32,12 +32,13 @@ npm run dev
 **API 키가 없어도 게임은 완전히 플레이됩니다.** 키가 없으면 오프라인 휴리스틱
 판정으로 자동 폴백하며, 게임 루프·신념게이지·승패 판정이 모두 정상 동작합니다.
 
-Claude를 통한 실제 AI 판정을 쓰려면 프로젝트 루트에 `.env`를 만들고 키를 넣습니다.
-(변수명은 `.env.example` 기준 — `CLAUDE_API_KEY`입니다. `ANTHROPIC_API_KEY` 아님 주의)
+실제 AI 판정(제출·시연 기본 = **GPT**)을 쓰려면 프로젝트 루트에 `.env`를 만들고 키를 넣습니다.
+(Claude는 선택 대체 — `CLAUDE_API_KEY`, `ANTHROPIC_API_KEY` 아님 주의)
 
 ```
-AI_PROVIDER=claude
-CLAUDE_API_KEY=sk-ant-...
+AI_PROVIDER=gpt
+OPENAI_API_KEY=sk-...
+# (선택) CLAUDE_API_KEY=sk-ant-...
 ```
 
 그리고 판정 프록시 서버를 함께 실행해야 합니다. (미실행 시 `/api/judge`가
