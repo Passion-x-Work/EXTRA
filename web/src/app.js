@@ -611,22 +611,23 @@ async function onTurn(e) {
 }
 
 // ── 종료 게이트: 마지막 대사 확인 후 결과로 ──
+// win: 승리 여부, onGo: 결과화면으로 넘길 때 부를 함수(기본=정방향 endGame)
 let endGateTimer = null;
-function showEndGate() {
+function showEndGate(win = state?.status === "WIN", onGo = endGame) {
   $("turn-input").disabled = true;
   $("turn-form").querySelector("button[type=submit]").disabled = true;
   const gate = document.createElement("button");
   gate.type = "button";
   gate.id = "end-gate";
   gate.className = "end-gate";
-  gate.innerHTML = `<span class="eg-label">${state.status === "WIN" ? "설득이 통했다!" : "설득이 끝났다…"}</span><span class="eg-arrow">결과 보기 ▶</span><span class="eg-bar"></span>`;
+  gate.innerHTML = `<span class="eg-label">${win ? "설득이 통했다!" : "설득이 끝났다…"}</span><span class="eg-arrow">결과 보기 ▶</span><span class="eg-bar"></span>`;
   $("log").appendChild(gate);
   $("log").scrollTop = $("log").scrollHeight;
   const go = () => {
     clearTimeout(endGateTimer); endGateTimer = null;
     $("turn-input").disabled = false;
     $("turn-form").querySelector("button[type=submit]").disabled = false;
-    endGame();
+    onGo();
   };
   gate.addEventListener("click", go);
   endGateTimer = setTimeout(go, 7000); // 7초 후 자동 진행(진행바와 동기화)
