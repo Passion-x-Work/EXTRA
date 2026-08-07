@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NPC 배치 테스트</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: "Noto Sans KR", sans-serif; background: #4a3d28; display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 16px; }
+  .switcher { display: flex; gap: 8px; }
+  .switcher button { padding: 8px 14px; border: 1px solid #ad8234; border-radius: 8px; background: #fdf6e6; color: #221d15; cursor: pointer; font-size: .85rem; }
+  .switcher button.active { background: #a8322a; color: #fff; border-color: #a8322a; }
+  .note { color: #ece2c9; font-size: .8rem; text-align: center; max-width: 320px; line-height: 1.5; }
+  #app { position: relative; overflow: hidden; width: 100%; max-width: 380px; height: 760px; background: #ece2c9; border-radius: 14px; box-shadow: 0 10px 40px rgba(0,0,0,.5); }
+  .head { position: relative; z-index: 3; padding: 14px 16px 10px; background: rgba(255,251,240,.6); }
+  .head b { font-family: serif; font-size: 1.1rem; color: #221d15; }
+  .gauge { margin-top: 8px; height: 12px; border-radius: 7px; background: rgba(0,0,0,.16); }
+  .gauge i { display: block; height: 100%; width: 40%; border-radius: 7px; background: linear-gradient(90deg,#ad8234,#a8322a); }
+  .chat-main { position: relative; display: flex; flex-direction: column; height: calc(100% - 66px); }
+  .log { display: flex; flex-direction: column; gap: 10px; padding: 12px 16px; overflow-y: auto; }
+  .msg { padding: 11px 14px; border-radius: 13px; max-width: 88%; line-height: 1.5; font-size: .92rem; }
+  .msg.npc { font-family: serif; background: #fdf6e6; border: 1px solid #e4d7b6; align-self: flex-start; box-shadow: 0 2px 8px rgba(0,0,0,.12); }
+  .char { display: flex; align-items: flex-end; justify-content: center; overflow: hidden; }
+  .char img { object-fit: contain; }
+  .form { display: flex; gap: 8px; padding: 10px 16px; background: rgba(0,0,0,.05); }
+  .form .hint { width: 44px; height: 44px; flex-shrink: 0; border-radius: 10px; background: #fdf6e6; border: 1px solid #ad8234; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  .form input { flex: 1; min-width: 0; padding: 12px; border: 1.5px solid rgba(0,0,0,.15); border-radius: 10px; font-size: .9rem; }
+  .form button.send { width: 52px; flex-shrink: 0; border: none; border-radius: 10px; background: #a8322a; color: #fff; font-size: 1.1rem; cursor: pointer; }
+  .bottom-row { display: none; }
+
+  /* ═══ 안 A: 대화(위) → NPC 상반신(아래) ═══ */
+  #app[data-plan="A"] .log { flex: 1 1 0; min-height: 0; justify-content: flex-end; }
+  #app[data-plan="A"] #char { flex: 0 0 auto; height: 30vh; min-height: 190px; max-height: 300px; align-items: flex-start; }
+  #app[data-plan="A"] #char img { width: 165%; max-width: none; max-height: none; object-position: top center; }
+  #app[data-plan="A"] .form { margin-top: auto; }
+  #app[data-plan="A"] #char-c { display: none; }
+
+  /* ═══ 안 B: 세종 크게(게이지 아래~입력창 위) + 대화창 겹침 ═══ */
+  #app[data-plan="B"] #char {
+    position: absolute; left: 0; right: 0; top: 0; bottom: 66px;
+    z-index: 0; align-items: flex-start; overflow: hidden;
+  }
+  #app[data-plan="B"] #char img { width: 118%; max-width: none; max-height: none; object-position: top center; }
+  #app[data-plan="B"] .log {
+    position: absolute; left: 0; right: 0; z-index: 2;
+    top: 42%; bottom: 66px; justify-content: flex-end;
+  }
+  #app[data-plan="B"] .msg.npc { background: rgba(253,246,230,.92); backdrop-filter: blur(2px); }
+  #app[data-plan="B"] .form { position: absolute; left: 0; right: 0; bottom: 0; z-index: 3; height: 66px; background: rgba(236,226,201,.96); }
+  #app[data-plan="B"] #char-c { display: none; }
+
+  /* ═══ 안 C: 대화 위 + 하단 좌 세종(투명·클로즈업·관모 삐죽) / 우 입력 ═══ */
+  #app[data-plan="C"] #char { display: none; }
+  #app[data-plan="C"] .form-standalone { display: none; }
+  #app[data-plan="C"] .chat-main { overflow: visible; }
+  #app[data-plan="C"] .log { flex: 1 1 0; min-height: 0; justify-content: flex-end; max-height: 40%; }
+  #app[data-plan="C"] .bottom-row {
+    display: flex; align-items: flex-end; gap: 8px;
+    padding: 10px 12px; margin-top: auto;
+    position: relative; z-index: 2;
+  }
+  /* 세종 칸: 테두리·배경 없음(투명) → 원래 배경 위에 얹힘. 관모가 위로 삐져나오게 overflow visible */
+  #app[data-plan="C"] #char-c {
+    flex: 0 0 130px; height: 170px;
+    background: none; border: none; border-radius: 0; overflow: visible;
+    align-items: flex-end;
+    margin-top: -40px;   /* 관모 끝이 입력칸보다 위로 올라오게 위로 당김 */
+  }
+  #app[data-plan="C"] #char-c img {
+    width: 210%; max-height: none;   /* 얼굴 위주 클로즈업 */
+    object-position: top center;
+  }
+  #app[data-plan="C"] .bottom-row .form { flex: 1; padding: 0; margin: 0; background: none; flex-direction: column; gap: 8px; }
+  #app[data-plan="C"] .bottom-row .form input { flex: 1; min-height: 90px; }
+  #app[data-plan="C"] .bottom-row .form .btn-line { display: flex; gap: 8px; justify-content: flex-end; }
+  #app[data-plan="C"] .bottom-row .form .hint { width: 48px; height: 46px; }
+  #app[data-plan="C"] .bottom-row .form button.send { width: 56px; height: 46px; }
+  .btn-line { display: contents; }
+  #app[data-plan="C"] .btn-line { display: flex; }
+</style>
+</head>
+<body>
+  <div class="switcher">
+    <button data-go="A" class="active">안 A · 상반신 클로즈업</button>
+    <button data-go="B">안 B · 배경형</button>
+    <button data-go="C">안 C · 좌NPC 우입력</button>
+  </div>
+  <p class="note" id="note">안 A: 대화(위) → NPC 상반신(모자~어깨, 아래)</p>
+
+  <div id="app" data-plan="A">
+    <div class="head">
+      <b>세종대왕</b>
+      <div class="gauge"><i></i></div>
+    </div>
+    <div class="chat-main">
+      <div class="log">
+        <div class="msg npc">그대는 누구인가. 마침 잘 왔다.</div>
+        <div class="msg npc">신하들이 새 문자를 두고 말이 많으니… 그대의 생각은 어떠한가?</div>
+      </div>
+      <div class="char" id="char"><img src="Front-NoBG-Phase01.webp" alt="세종"></div>
+      <div class="form form-standalone">
+        <div class="hint">💡</div>
+        <input placeholder="세종대왕에게 건넬 논거를 입력…">
+        <button class="send">▶</button>
+      </div>
+      <div class="bottom-row">
+        <div class="char" id="char-c"><img src="Front-NoBG-Phase01.webp" alt="세종"></div>
+        <div class="form">
+          <input placeholder="논거 입력…">
+          <div class="btn-line">
+            <div class="hint">💡</div>
+            <button class="send">▶</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const app = document.getElementById('app');
+  const note = document.getElementById('note');
+  const notes = {
+    A: "안 A: 대화(위) → NPC 상반신(모자~어깨, 아래).",
+    B: "안 B: 세종 크게(게이지 아래~입력창 위) + 대화창 겹침, 입력창 분리.",
+    C: "안 C: 대화 위 + 하단 좌 세종(투명·클로즈업, 관모 삐죽) / 우 입력창+[힌트·전송]."
+  };
+  document.querySelectorAll('.switcher button').forEach(b => {
+    b.onclick = () => {
+      document.querySelectorAll('.switcher button').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      app.dataset.plan = b.dataset.go;
+      note.textContent = notes[b.dataset.go];
+    };
+  });
+</script>
+</body>
+</html>
