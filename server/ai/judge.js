@@ -51,6 +51,18 @@ function resolveSources(ids, knowledge) {
 }
 
 function buildSystemPrompt(profile, fragments, mode, tone) {
+  // 번외(역설득): AI 화자(하루/쿠로다)가 현대 게임 개발자다 → 사극체·시대착오 규칙을 쓰지 않는다.
+  if (mode === "reverse-persuasion") {
+    const who = profile.speaker || "동료 개발자";
+    return [
+      profile.systemPromptBase,
+      "\n[대사·말투 규칙]",
+      `- line은 '${who}'가 플레이어(미야모토)의 반박에 보이는 반응 대사다. 반드시 '${who}'로서, 현대 게임 개발 현장의 자연스러운 구어체로 1~2문장만 말한다.`,
+      "- 사극체·옛말투('~하옵니다/이옵니다/하시옵/과인' 등) 절대 금지. 현대 인물이다.",
+      "- 게이지·점수·승패는 언급하지 않는다. grade(등급)로만 판정한다.",
+      "- 시대착오(anachronism) 판정 없음 — 현대 배경이므로 항상 false.",
+    ].join("\n");
+  }
   const src = fragments.map((f) => `- [${f.id}] ${f.content} (출처: ${f.source})`).join("\n") || "(관련 사료 없음)";
   return [
     profile.systemPromptBase,
