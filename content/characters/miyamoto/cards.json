@@ -36,7 +36,9 @@
       "targetPhilosophy": "재미·즐거움 우선 — '사람들이 원하는 걸 좇기보다, 항상 즐겁게 플레이할 새로운 경험을 만들려 한다'",
       "onDefend": 15, "onComply": -15, "card": "「재미 우선주의」",
       "sourceStatus": "verified",
-      "sourceNote": "Eurogamer 인터뷰(2010-03-31): 'I always try to create new experiences that are fun to play' / 'a good idea solves multiple problems at once'"
+      "sourceNote": "Eurogamer 인터뷰(2010-03-31): 'I always try to create new experiences that are fun to play' / 'a good idea solves multiple problems at once'",
+      "defendKeywords": ["재미", "즐거", "재미있", "노는", "새로운 경험", "플레이어", "즐겁", "우선", "먼저"],
+      "complyKeywords": ["예술적인 게임", "평단", "인정받", "메시지가 담긴", "예술 게임"]
     },
     {
       "id": "arg-02", "speaker": "haru", "kind": "temptation",
@@ -60,7 +62,9 @@
       "targetPhilosophy": "그 명언은 내가 한 말이 아니다 — 완성도는 중요하나 이유는 그 가짜 인용이 아님(출처를 의심하라)",
       "onDefend": 20, "onComply": -20, "card": "「출처를 의심하라」",
       "sourceStatus": "trap_misattributed",
-      "sourceNote": "오귀속 확정: Nintendo Life(2022)·GoNintendo·A Critical Hit 추적 — 실제 기원은 Siobhan Beeman(Origin, GDC 1996), 이전 변형 Gamefan(1998, Jason Schreiber). 미야모토 귀속은 2002년경부터 확산. 미야모토 발언 아님"
+      "sourceNote": "오귀속 확정: Nintendo Life(2022)·GoNintendo·A Critical Hit 추적 — 실제 기원은 Siobhan Beeman(Origin, GDC 1996), 이전 변형 Gamefan(1998, Jason Schreiber). 미야모토 귀속은 2002년경부터 확산. 미야모토 발언 아님",
+      "defendKeywords": ["출처", "아니", "의심", "가짜", "사실", "누가", "한 말", "제가 한", "내가 한", "확인", "근거", "정말"],
+      "complyKeywords": ["맞는 말", "명언", "그 말대로", "미루", "무한정", "따르", "역시"]
     },
     {
       "id": "arg-05", "speaker": "haru", "kind": "temptation",
@@ -68,7 +72,9 @@
       "targetPhilosophy": "누구나 성취감을 느끼는 접근성 — '누구나 쉽게 잡되 깊이가 있게', 어려움 자체가 목적이 아님",
       "onDefend": 15, "onComply": -15, "card": "「모두의 재미」",
       "sourceStatus": "verified",
-      "sourceNote": "미야모토/닌텐도 접근성 철학(직관적 조작·누구나 플레이, '5세부터 95세까지'). Game Developer 'Designer Spotlight' 등 — 정확한 표현은 원문 대조 권장"
+      "sourceNote": "미야모토/닌텐도 접근성 철학(직관적 조작·누구나 플레이, '5세부터 95세까지'). Game Developer 'Designer Spotlight' 등 — 정확한 표현은 원문 대조 권장",
+      "defendKeywords": ["누구나", "모두", "접근성", "쉽게", "깊이", "5세", "95세", "성취감", "다 같이"],
+      "complyKeywords": ["어렵게", "고수들이", "난도", "무시당", "어려울수록", "어렵게 만"]
     }
   ],
   "winCondition": {
