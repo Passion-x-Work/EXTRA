@@ -323,8 +323,14 @@ async function onReverseTurn(e) {
 }
 
 function revEnd(win) {
-  if (!rev) return;
+  if (!rev || rev.done) return;
   rev.done = true;
+  // 마지막 대사 읽을 시간 → "결과 보기 ▶"(또는 7초) → 결과화면
+  showEndGate(win, () => revShowResult(win));
+}
+
+// 실제 결과화면 렌더(게이트 통과 후 호출)
+function revShowResult(win) {
   const sc = rev.scenario || {};
   $("result-title").textContent = win ? "철학을 지켰다" : "흔들렸다";
   $("result-line").textContent = win ? (sc.winScene?.text || "") : (sc.loseScene?.text || "");
@@ -333,7 +339,18 @@ function revEnd(win) {
   $("result-cta").textContent = win ? (sc.winScene?.historicalNote || "") : (sc.loseScene?.encouragement || "");
   $("result-cards").innerHTML = "";
   $("save-card").style.display = "none"; // 역모드는 공유 카드 미지원(MVP)
+
   show("scr-result");
+  const seal = $("win-seal");
+  seal.classList.remove("stamped");
+  $("result-card").classList.remove("pop-in");
+  if (win) {
+    requestAnimationFrame(() => {
+      $("result-card").classList.add("pop-in"); // 카드 팝인
+      seal.classList.add("stamped");            // 낙관 쾅
+      burstConfetti();                          // 축하 꽃가루
+    });
+  }
 }
 
 function endGame() {
