@@ -3,6 +3,7 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "functions": {
-    "api/judge.js": { "includeFiles": "{config,content}/**" }
+    "api/judge.js": { "includeFiles": "{config,content}/**" },
+    "api/judgeReverse.js": { "includeFiles": "{config,content}/**" }
   }
 }

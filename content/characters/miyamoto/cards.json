@@ -78,9 +78,10 @@
     }
   ],
   "winCondition": {
-    "goalGauge": 100,
-    "startGauge": 0,
+    "goalGauge": 80,
+    "startGauge": 20,
+    "winAfterAllArgs": true,
     "onWin": "미야모토의 철학 체계 완성 — '당신은 이제 미야모토처럼 생각합니다.'",
-    "note": "방어 성공 onDefend↑ / 동조 onComply↓. 세부 밸런스는 config로 이관 예정."
+    "note": "Q1(배정윤) 결정: 시작 20 / 승리 80. 조기 종료 없이 5논거 전부 진행 후, 최종 게이지 ≥ goalGauge면 승리(arg-05까지 항상 노출). 밸런스는 이 값만 조정."
   }
 }

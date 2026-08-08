@@ -23,11 +23,10 @@ let snaps = [];              // 턴별 상태 스냅샷 스택(베끼기 응징 
 const PARROT_ROLLBACK = 2;   // 사료 베끼기 감지 시 되돌릴 턴 수
 
 // ── 번외(역설득) 세션 상태 ──
-// 게이지 밸런스는 잠정값(⚠️ Q1 배정윤 결정 대기). cards.winCondition으로 이관 예정.
-let rev = null;              // { cards, scenario, index, gauge, done }
-const REV_START = 40;        // 잠정 시작 게이지
-const REV_PASS = 60;         // 잠정: 논거 소진 시 이 이상이면 승리
-const isReverseChar = (id) => !!chars[id]?.cards;   // cards.json 있으면 역설득 인물
+// 밸런스는 cards.winCondition이 단일 출처(Q1: 시작 20 / 승리 80). 조기 종료 없이 5논거 전부 진행.
+let rev = null;              // { cards, scenario, index, gauge, goal, done }
+const REV_START_DEFAULT = 20, REV_GOAL_DEFAULT = 80; // winCondition 없을 때 폴백
+const isReverseChar = (id) => !!chars[id]?.cards;    // cards.json 있으면 역설득 인물
 
 // ── 사료 도감(localStorage) ──
 const DOGAM_KEY = "extra_dogam_v1";
@@ -257,7 +256,9 @@ function renderRevGauge() {
 
 function startReverse(id) {
   charId = id;
-  rev = { cards: chars[id].cards, scenario: chars[id].scenario, index: 0, gauge: REV_START, done: false };
+  const wc = chars[id].cards.winCondition || {};
+  rev = { cards: chars[id].cards, scenario: chars[id].scenario, index: 0,
+          gauge: wc.startGauge ?? REV_START_DEFAULT, goal: wc.goalGauge ?? REV_GOAL_DEFAULT, done: false };
   state = null; snaps = [];
   $("log").innerHTML = "";
   $("scr-chat").dataset.theme = id;
@@ -280,7 +281,7 @@ function startReverse(id) {
 // AI 화자(하루/쿠로다)가 논거[index]를 던진다
 function revOpen(index) {
   const t = openTurn(rev.cards, index);
-  if (!t) return revEnd(rev.gauge >= REV_PASS); // 논거 소진 → 잠정 통과선으로 판정
+  if (!t) return revEnd(rev.gauge >= rev.goal); // 논거 소진 → 승리선(goalGauge)으로 판정
   rev.index = index;
   $("char-name").textContent = t.speaker;
   $("char-diff").textContent = t.speakerRole || rev.scenario?.timeLabel || "";
@@ -315,10 +316,9 @@ async function onReverseTurn(e) {
   addLine(r.defended ? `[방어 +${r.delta}]` : `[동조 ${r.delta}]`, "grade-tag");
   if (r.cardWon) addLine(`🃏 ${r.cardWon} 획득`, "grade-tag");
   renderRevGauge();
-  if (rev.gauge <= 0) return revEnd(false);
-  if (r.win) return revEnd(true);
+  // 조기 종료 없음 — 5논거 전부 진행(arg-05까지 항상 노출). 소진 후에만 승패 판정.
   const next = rev.index + 1;
-  if (next >= rev.cards.arguments.length) return revEnd(rev.gauge >= REV_PASS);
+  if (next >= rev.cards.arguments.length) return revEnd(rev.gauge >= rev.goal);
   setTimeout(() => revOpen(next), 650); // 반응 읽을 시간
 }
 
