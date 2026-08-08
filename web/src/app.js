@@ -303,12 +303,12 @@ async function onReverseTurn(e) {
   try {
     const res = await fetch("/api/judgeReverse", {
       method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ charId, argIndex: rev.index, input, gauge: rev.gauge, provider }),
+      body: JSON.stringify({ charId, argIndex: rev.index, input, gauge: rev.gauge, provider, tone }),
     });
     if (!res.ok) throw new Error("HTTP " + res.status);
     r = await res.json();
   } catch (_) {
-    r = await judgeRebuttal(rev.cards, rev.index, input, rev.gauge, { provider: "offline", mode: "reverse-persuasion" });
+    r = await judgeRebuttal(rev.cards, rev.index, input, rev.gauge, { provider: "offline", mode: "reverse-persuasion", tone });
   }
   btn.disabled = false;
   rev.gauge = r.gauge;
