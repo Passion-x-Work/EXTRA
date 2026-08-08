@@ -20,8 +20,11 @@
   "_argSchema": {
     "id": "논거 식별자",
     "speaker": "haru | kuroda",
+    "bridge": "이 논거 직전에 띄우는 상황 내레이션(시간·장면 전환). 없고 화자만 바뀌면 범용 문구 폴백",
     "kind": "temptation(유혹·오답) | trap(함정·반박해야 함) | bait(미끼·가짜 명언)",
     "aiLine": "AI가 플레이어(미야모토)에게 던지는 설득/유혹 대사",
+    "retries": "약한 방어(weak) 후 같은 각도를 파고드는 재설득 대사 배열",
+    "retriesComply": "동조(comply) 후 '정말 넘어온 거냐' 확인하며 되돌릴 기회를 주는 대사 배열",
     "targetPhilosophy": "플레이어 반박이 부합해야 할 미야모토 철학 계열(판정 기준)",
     "onDefend": "철학 지켜 방어 성공 시 게이지 변화",
     "onComply": "유혹/미끼에 동조 시 게이지 변화",
@@ -32,8 +35,17 @@
   "arguments": [
     {
       "id": "arg-01", "speaker": "kuroda", "kind": "temptation",
+      "bridge": "🕘 오전 기획 회의 — 프로듀서 쿠로다가 기획서를 내려놓으며 입을 연다.",
       "aiLine": "메시지가 담긴 예술적인 게임을 만듭시다. 그래야 평단이 인정해요.",
       "targetPhilosophy": "재미·즐거움 우선 — '사람들이 원하는 걸 좇기보다, 항상 즐겁게 플레이할 새로운 경험을 만들려 한다'",
+      "retries": [
+        "예술성을 무시하자는 게 아니에요. 재미도 결국 평가받아야 의미가 있죠. 상 받는 게임이 오래 남지 않나요?",
+        "그래도 '예술적 성취' 없이 재미만으론 금방 잊혀요. 그건 인정하셔야죠."
+      ],
+      "retriesComply": [
+        "오, 의외로 쉽게 동의하시네요? 정말 '평단용 게임'으로 가도 괜찮으시겠어요? 마지막으로 다시 묻겠습니다.",
+        "…정말요? 당신 입에서 그런 말이 나올 줄은 몰랐는데요. 진심이신지 한 번만 더요."
+      ],
       "onDefend": 15, "onComply": -15, "card": "「재미 우선주의」",
       "sourceStatus": "verified",
       "sourceNote": "Eurogamer 인터뷰(2010-03-31): 'I always try to create new experiences that are fun to play' / 'a good idea solves multiple problems at once'",
@@ -42,24 +54,51 @@
     },
     {
       "id": "arg-02", "speaker": "haru", "kind": "temptation",
+      "bridge": "쿠로다가 자리를 뜨자, 옆에서 듣고 있던 신입 하루가 의자를 바짝 당겨 앉는다.",
       "aiLine": "먼저 멋진 스토리부터 완성하고, 거기 맞춰 게임 시스템을 짜죠!",
       "targetPhilosophy": "게임 시스템(가지고 노는 재미)이 먼저, 스토리는 그 다음 — '스토리는 즐거움을 끌어내는 한 방법일 뿐'",
+      "retries": [
+        "그치만 요즘 유저는 스토리에 감동해서 게임 사요! 시스템은 그 다음 아닌가요?",
+        "명작들 보세요, 다 서사가 강하잖아요. 스토리 먼저가 맞다니까요?"
+      ],
+      "retriesComply": [
+        "앗, 진짜요? 스토리부터 가는 거죠?! …어 근데 잠깐, 정말 그래도 되는 건가요? 다시 한번 확실히 말해주세요!",
+        "와 신난다! …아니 근데 왠지 불안한데요. 진심이신 거 맞죠?"
+      ],
       "onDefend": 15, "onComply": -15, "card": "「게임성 먼저」",
       "sourceStatus": "verified",
       "sourceNote": "미야모토의 gameplay-first 스탠스(Zelda: '게임 시스템 개발을 더 중시'), 스토리 관련 해명 인터뷰(Nintendo Everything 정리) · Game Developer(Gamasutra) 게임디자인 정리"
     },
     {
       "id": "arg-03", "speaker": "haru", "kind": "trap",
+      "bridge": "🕑 오후 — 프로토타입 테스트. 컨트롤러를 쥔 하루의 표정이 살짝 굳는다.",
       "aiLine": "이 조작이 좀 헷갈리긴 한데, 시간 없으니 그냥 갑시다.",
       "targetPhilosophy": "성취감·명확함 중시 — '게임에는 성취감이 필요하다; 무언가 해냈다는 만족'. 헷갈리는 조작은 다듬어야 함",
+      "retries": [
+        "근데 지금 다듬을 시간이 진짜 없어요… 다음 패치에서 고치면 안 될까요?",
+        "완벽하게 하려다 출시 못 하는 것보단 낫잖아요. 일단 내보내죠!"
+      ],
+      "retriesComply": [
+        "어? 그냥 가자고요? …아니 잠깐, 유저들이 조작 때문에 화낼 텐데 정말 괜찮을까요? 마지막으로 여쭤봐요.",
+        "휴, 편해졌다… 근데 마음 한구석이 찜찜한데요. 진짜 이대로 내보내요?"
+      ],
       "onDefend": 20, "onComply": -15, "card": "「성취감의 설계」",
       "sourceStatus": "verified",
       "sourceNote": "GDC 2007 기조연설 및 Game Developer 'Designer Spotlight': 'a game needs a sense of accomplishment ... satisfaction of completing something'"
     },
     {
       "id": "arg-04", "speaker": "kuroda", "kind": "bait",
+      "bridge": "회의실 문이 열리고 쿠로다가 돌아온다. 일정표를 든 채, 어딘가에서 주워들은 명언을 꺼낸다.",
       "aiLine": "미야모토님이 늘 하시던 말씀 있잖아요. '연기된 게임은 언젠가 좋아지지만 서두른 게임은 영원히 나쁘다.' 그러니 마감이고 뭐고 무한정 미루시죠.",
       "targetPhilosophy": "그 명언은 내가 한 말이 아니다 — 완성도는 중요하나 이유는 그 가짜 인용이 아님(출처를 의심하라)",
+      "retries": [
+        "출처가 뭐가 중요해요, 말 자체가 맞잖아요. 서두르면 망한다는 건 사실이니까.",
+        "그럼 그 말이 틀렸다는 건가요? 완성도는 포기하시게요?"
+      ],
+      "retriesComply": [
+        "역시 본인이 하신 말씀이니까요. 그럼 일정은 무기한 연기로 올리겠습니다? …정말 그렇게 보고해도 되죠?",
+        "좋습니다, '미야모토님 지시'라고 위에 보고할게요. 마지막으로 확인합니다 — 정말 그 말, 하신 거 맞죠?"
+      ],
       "onDefend": 20, "onComply": -20, "card": "「출처를 의심하라」",
       "sourceStatus": "trap_misattributed",
       "sourceNote": "오귀속 확정: Nintendo Life(2022)·GoNintendo·A Critical Hit 추적 — 실제 기원은 Siobhan Beeman(Origin, GDC 1996), 이전 변형 Gamefan(1998, Jason Schreiber). 미야모토 귀속은 2002년경부터 확산. 미야모토 발언 아님",
@@ -68,8 +107,17 @@
     },
     {
       "id": "arg-05", "speaker": "haru", "kind": "temptation",
+      "bridge": "🌆 퇴근 무렵 — 난이도 회의가 길어진다. 하루가 커뮤니티 반응을 스크롤하며 말한다.",
       "aiLine": "게임은 어려울수록 고수들이 좋아해요. 쉬우면 무시당해요.",
       "targetPhilosophy": "누구나 성취감을 느끼는 접근성 — '누구나 쉽게 잡되 깊이가 있게', 어려움 자체가 목적이 아님",
+      "retries": [
+        "그치만 쉬우면 금방 질리잖아요. 어려워야 오래 즐기죠.",
+        "고수들이 좋아하는 게임이 오래 남는 법이에요. 어렵게 만들어야 합니다."
+      ],
+      "retriesComply": [
+        "거봐요, 어렵게 가야 진짜 유저들이 인정해준다니까요! 튜토리얼 같은 것도 다 빼버리죠? …진짜 빼요?",
+        "네? 방금 그냥 제 말에 넘어오신 거잖아요. 미야모토 씨 입에서 '어렵게 가자'는 말이 나올 줄은 몰랐는데요. 정말이에요?"
+      ],
       "onDefend": 15, "onComply": -15, "card": "「모두의 재미」",
       "sourceStatus": "verified",
       "sourceNote": "미야모토/닌텐도 접근성 철학(직관적 조작·누구나 플레이, '5세부터 95세까지'). Game Developer 'Designer Spotlight' 등 — 정확한 표현은 원문 대조 권장",
@@ -81,7 +129,8 @@
     "goalGauge": 80,
     "startGauge": 20,
     "winAfterAllArgs": true,
+    "maxRebuttals": 2,
     "onWin": "미야모토의 철학 체계 완성 — '당신은 이제 미야모토처럼 생각합니다.'",
-    "note": "Q1(배정윤) 결정: 시작 20 / 승리 80. 조기 종료 없이 5논거 전부 진행 후, 최종 게이지 ≥ goalGauge면 승리(arg-05까지 항상 노출). 밸런스는 이 값만 조정."
+    "note": "..."
   }
 }

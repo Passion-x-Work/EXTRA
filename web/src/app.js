@@ -2,7 +2,7 @@
 import cfg from "../../config/difficulty.json";
 import { initState, applyGrade, resultBand } from "../../server/engine/applyGrade.js";
 import { judgeOffline } from "../../server/ai/judge.js";
-import { openTurn, judgeRebuttal } from "../../server/engine/miyamotoEngine.js";
+import { openTurn, judgeRebuttal, getRetryLine } from "../../server/engine/miyamotoEngine.js";
 
 // content/characters/<id>/*.json 전부 로드 → chars[id] = { profile, knowledge, debate, scenario }
 const modules = import.meta.glob("../../content/characters/*/*.json", { eager: true });
@@ -24,9 +24,33 @@ const PARROT_ROLLBACK = 2;   // 사료 베끼기 감지 시 되돌릴 턴 수
 
 // ── 번외(역설득) 세션 상태 ──
 // 밸런스는 cards.winCondition이 단일 출처(Q1: 시작 20 / 승리 80). 조기 종료 없이 5논거 전부 진행.
-let rev = null;              // { cards, scenario, index, gauge, goal, done }
+let rev = null;              // { cards, scenario, index, gauge, goal, done, log }
 const REV_START_DEFAULT = 20, REV_GOAL_DEFAULT = 80; // winCondition 없을 때 폴백
 const isReverseChar = (id) => !!chars[id]?.cards;    // cards.json 있으면 역설득 인물
+
+// ── 역모드 기록: 반박 세션 로그 + 철학 카드 컬렉션(localStorage) ──
+// REV_LOG: 최신 1판의 공방 전체(스펙 작업1 — 1차는 최신 1판만 유지).
+// REV_DOGAM: 획득 철학 카드 누적 { miyamoto: { "arg-01": { card, philosophy, myInput, speaker, ts } } }
+//   myInput = 그 카드를 얻어낸 '내 반박'(첫 strong 반박 고정 — 이후 판에서 더 잘 막아도 첫 기록 보존).
+const REV_LOG_KEY = "extra_reverse_log_v1";
+const REV_DOGAM_KEY = "extra_reverse_dogam_v1";
+const loadRevLog = () => { try { return JSON.parse(localStorage.getItem(REV_LOG_KEY)) || {}; } catch (_) { return {}; } };
+const loadRevDogam = () => { try { return JSON.parse(localStorage.getItem(REV_DOGAM_KEY)) || {}; } catch (_) { return {}; } };
+function saveRevSession() {
+  if (!rev || !rev.log?.length) return;
+  const all = loadRevLog();
+  all[charId] = { log: rev.log, gauge: rev.gauge, win: rev.gauge >= rev.goal, ts: Date.now() };
+  try { localStorage.setItem(REV_LOG_KEY, JSON.stringify(all)); } catch (_) {}
+}
+// 철학 카드 획득 기록(인물별·논거별). 이미 있으면 유지(첫 획득의 내 반박을 보존).
+function addRevCard(argId, card, philosophy, myInput, speaker) {
+  const d = loadRevDogam();
+  const mine = (d[charId] ??= {});
+  if (!mine[argId]) {
+    mine[argId] = { card, philosophy, myInput, speaker, ts: Date.now() };
+    try { localStorage.setItem(REV_DOGAM_KEY, JSON.stringify(d)); } catch (_) {}
+  }
+}
 
 // ── 사료 도감(localStorage) ──
 const DOGAM_KEY = "extra_dogam_v1";
@@ -258,7 +282,9 @@ function startReverse(id) {
   charId = id;
   const wc = chars[id].cards.winCondition || {};
   rev = { cards: chars[id].cards, scenario: chars[id].scenario, index: 0,
-          gauge: wc.startGauge ?? REV_START_DEFAULT, goal: wc.goalGauge ?? REV_GOAL_DEFAULT, done: false };
+        gauge: wc.startGauge ?? REV_START_DEFAULT, goal: wc.goalGauge ?? REV_GOAL_DEFAULT,
+        maxRebuttals: wc.maxRebuttals ?? 2, attempt: 0, speaker: null, done: false,
+        log: [], cardsWon: [] };
   state = null; snaps = [];
   $("log").innerHTML = "";
   $("scr-chat").dataset.theme = id;
@@ -271,25 +297,57 @@ function startReverse(id) {
   $("char-portrait").src = ""; // 이미지 대기(자동 숨김)
   updateScene();
   renderRevGauge();
-  const intro = rev.scenario?.intro?.[0];
-  if (intro) addLine(intro, "npc");
+  // 도입부: 상황 설정 내레이션 전체(당신=거장, 회의 중, 두 동료 소개)
+  (rev.scenario?.intro || []).forEach((line) => addBridge(line));
   show("scr-chat");
   revOpen(0);
   $("turn-input").focus();
 }
 
+// 역모드 화자 초상: Assets/Reverse/<speaker>-<tone>-<mood>.webp (파일 없으면 자동 숨김)
+const REV_SPEAKER_ID = { "하루": "haru", "쿠로다": "kuroda" };
+function revPortrait(speaker, mood = "neutral") {
+  const sid = REV_SPEAKER_ID[speaker] || "haru";
+  fadePortrait($("char-portrait"), `/Assets/Reverse/${sid}-${tone}-${mood}.webp`);
+}
+// 화자별 말풍선 클래스(S4 캐릭터 대비: 하루=따뜻/열정, 쿠로다=차가움/데이터)
+const revSpeakerCls = (speaker) => REV_SPEAKER_ID[speaker] === "kuroda" ? "npc--kuroda" : "npc--haru";
+
+// 상황 내레이션(브릿지) — 화자/시간 전환을 자연스럽게 잇는 무대 지시문
+function addBridge(text) {
+  const div = document.createElement("div");
+  div.className = "msg bridge";
+  div.textContent = text;
+  $("log").appendChild(div);
+  $("log").scrollTop = $("log").scrollHeight;
+}
+
+// 공방 소진으로 철학을 놓쳤을 때: 무엇을 잃었는지 명시(카드 유실 + 다음 논거로 넘어감을 안내)
+function addMissedNotice(arg, outcome) {
+  const div = document.createElement("div");
+  div.className = "msg missed";
+  const why = outcome === "comply" ? "유혹에 동조해" : "반박이 부족해";
+  div.innerHTML = `💔 <b>철학을 놓쳤다</b> — ${why} <b>${arg.card || "이 논거의 카드"}</b>를 지키지 못했다.<br/><small>놓친 철학: ${arg.targetPhilosophy.split("—")[0].trim()} · 대화는 다음 주제로 넘어간다</small>`;
+  $("log").appendChild(div);
+  $("log").scrollTop = $("log").scrollHeight;
+}
+
 // AI 화자(하루/쿠로다)가 논거[index]를 던진다
 function revOpen(index) {
   const t = openTurn(rev.cards, index);
-  if (!t) return revEnd(rev.gauge >= rev.goal); // 논거 소진 → 승리선(goalGauge)으로 판정
+  if (!t) return revEnd(rev.gauge >= rev.goal);
   rev.index = index;
+  rev.attempt = 0;          // 새 논거 → 공방 카운트 리셋
+  rev.speaker = t.speaker;  // 재설득 시 같은 화자로 이어가기
   $("char-name").textContent = t.speaker;
   $("char-diff").textContent = t.speakerRole || rev.scenario?.timeLabel || "";
-  addLine(`${t.speaker}: "${t.aiLine}"`, "npc");
+  if (t.bridge) addBridge(t.bridge); // 상황 전환 내레이션(같은 날 시간 경과·화자 교대)
+  addLine(`${t.speaker}: "${t.aiLine}"`, "npc " + revSpeakerCls(t.speaker)); // 화자별 말풍선 대비(S4)
+  revPortrait(t.speaker, "neutral");
   renderRevGauge();
 }
 
-// 플레이어 반박 판정(프록시 → 실패 시 오프라인 폴백) + 게이지 반영
+// 플레이어 반박 판정(프록시 → 실패 시 오프라인 폴백) + 멀티턴 흐름
 async function onReverseTurn(e) {
   e.preventDefault();
   const input = $("turn-input").value.trim();
@@ -298,33 +356,75 @@ async function onReverseTurn(e) {
   addLine("나: " + input, "me");
   const btn = $("turn-form").querySelector("button[type=submit]");
   btn.disabled = true;
+
+  // 이번이 이 논거의 마지막 공방인가(카운트 소진 직전)
+  const isFinal = rev.attempt + 1 >= rev.maxRebuttals;
   const provider = $("provider").value;
   let r;
   try {
     const res = await fetch("/api/judgeReverse", {
       method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ charId, argIndex: rev.index, input, gauge: rev.gauge, provider, tone }),
+      body: JSON.stringify({ charId, argIndex: rev.index, input, gauge: rev.gauge, provider, tone, isFinal }),
     });
     if (!res.ok) throw new Error("HTTP " + res.status);
     r = await res.json();
   } catch (_) {
-    r = await judgeRebuttal(rev.cards, rev.index, input, rev.gauge, { provider: "offline", mode: "reverse-persuasion", tone });
+    r = await judgeRebuttal(rev.cards, rev.index, input, rev.gauge, { provider: "offline", mode: "reverse-persuasion", tone, isFinal });
   }
   btn.disabled = false;
+
   rev.gauge = r.gauge;
   addLine(r.verdict.line, "npc");
-  addLine(r.defended ? `[방어 +${r.delta}]` : `[동조 ${r.delta}]`, "grade-tag");
+  const tagLabel = r.outcome === "strong" ? `[방어 +${r.delta}]`
+                 : r.outcome === "weak"   ? `[약한 방어 +${r.delta}]`
+                 : `[동조 ${r.delta}]`;
+  addLine(tagLabel, "grade-tag");
   if (r.cardWon) addLine(`🃏 ${r.cardWon} 획득`, "grade-tag");
+  revPortrait(rev.speaker, r.mood);   // 판정 mood로 표정 전환
   renderRevGauge();
-  // 조기 종료 없음 — 5논거 전부 진행(arg-05까지 항상 노출). 소진 후에만 승패 판정.
-  const next = rev.index + 1;
-  if (next >= rev.cards.arguments.length) return revEnd(rev.gauge >= rev.goal);
-  setTimeout(() => revOpen(next), 650); // 반응 읽을 시간
+
+  // 공방 기록(작업1) + 철학 카드 즉시 수집(작업2: 카드 + 그때의 내 반박)
+  const curArg = rev.cards.arguments[rev.index];
+  rev.log.push({ argId: curArg.id, speaker: rev.speaker, aiLine: curArg.aiLine,
+                 myInput: input, outcome: r.outcome, grade: r.verdict.grade,
+                 delta: r.delta, cardWon: r.cardWon || null });
+  if (r.cardWon) {
+    rev.cardsWon.push({ argId: curArg.id, card: r.cardWon, myInput: input });
+    addRevCard(curArg.id, r.cardWon, curArg.targetPhilosophy, input, rev.speaker);
+  }
+
+  const lastArg = rev.index + 1 >= rev.cards.arguments.length;
+
+  // strong: 논거 확실히 방어 → 다음 논거(마지막이면 종료)
+  if (r.outcome === "strong") {
+    if (lastArg) return revEnd(rev.gauge >= rev.goal);
+    return void setTimeout(() => revOpen(rev.index + 1), 800);
+  }
+
+  // weak/comply인데 아직 공방 여유 있음 → 같은 화자가 이어간다
+  // weak: 각도를 바꿔 재설득 / comply: "정말 넘어온 거냐" 확인(되돌릴 기회)
+  rev.attempt++;
+  if (rev.attempt < rev.maxRebuttals) {
+    const rt = getRetryLine(rev.cards, rev.index, rev.attempt - 1, r.outcome);
+    return void setTimeout(() => {
+      addLine(`${rt.speaker}: "${rt.line}"`, "npc " + revSpeakerCls(rt.speaker));
+      revPortrait(rev.speaker, r.outcome === "comply" ? "smug" : "pressing");
+    }, 800);
+  }
+
+  // 공방 소진 → 철학을 놓쳤음을 명시(어떤 카드를 잃었고, 게이지가 어떻게 됐는지)
+  const missed = rev.cards.arguments[rev.index];
+  addMissedNotice(missed, r.outcome);
+
+  // 다음 논거(마지막이면 종료)
+  if (lastArg) return revEnd(rev.gauge >= rev.goal);
+  setTimeout(() => revOpen(rev.index + 1), 1400);
 }
 
 function revEnd(win) {
   if (!rev || rev.done) return;
   rev.done = true;
+  saveRevSession(); // 이번 판 공방 기록 저장(작업1 — 최신 1판)
   // 마지막 대사 읽을 시간 → "결과 보기 ▶"(또는 7초) → 결과화면
   showEndGate(win, () => revShowResult(win));
 }
@@ -337,9 +437,17 @@ function revShowResult(win) {
   $("result-turns").textContent = `${Math.min(rev.index + 1, rev.cards.arguments.length)}논거`;
   $("result-grade").textContent = win ? "정복" : "—";
   $("result-cta").textContent = win ? (sc.winScene?.historicalNote || "") : (sc.loseScene?.encouragement || "");
-  $("result-cards").innerHTML = "";
-  $("save-card").style.display = "none"; // 역모드는 공유 카드 미지원(MVP)
 
+  // 이번 판 획득 철학 카드 + 내 반박(작업2: "이 철학을, 나는 이런 말로 지켜냈다")
+  const rc = $("result-cards");
+  rc.innerHTML = rev.cardsWon.length
+    ? `<div class="rc-title">철학 카드 ${rev.cardsWon.length}장 획득</div>` +
+      rev.cardsWon.map((c) =>
+        `<div class="rev-won"><span class="rc-chip">🃏 ${c.card}</span><small class="rev-won-input">“${c.myInput.slice(0, 60)}${c.myInput.length > 60 ? "…" : ""}”</small></div>`
+      ).join("")
+    : `<div class="rc-title muted">획득한 철학 카드가 없습니다</div>`;
+
+  $("save-card").style.display = ""; // 역모드 공유 카드(작업4) 지원
   show("scr-result");
   const seal = $("win-seal");
   seal.classList.remove("stamped");
@@ -445,22 +553,44 @@ function burstConfetti() {
   })();
 }
 
-// ── 사료 도감 렌더 ──
+// ── 사료 도감 렌더 (정방향 사료 카드 + 역모드 철학 카드 통합) ──
 function renderDogam() {
   const d = loadDogam();
+  const rd = loadRevDogam();
   const el = $("dogam-list");
   const entries = Object.entries(d).filter(([, ids]) => ids && ids.length);
-  if (!entries.length) {
-    el.innerHTML = `<p class="dogam-empty">아직 모은 사료가 없어요.<br />인물을 설득해 사료 카드를 모아보세요.</p>`;
+  const revEntries = Object.entries(rd).filter(([, cards]) => cards && Object.keys(cards).length);
+
+  if (!entries.length && !revEntries.length) {
+    el.innerHTML = `<p class="dogam-empty">아직 모은 카드가 없어요.<br />인물을 설득해 사료 카드를, 철학을 지켜 철학 카드를 모아보세요.</p>`;
     return;
   }
-  el.innerHTML = entries.map(([cid, ids]) => {
+
+  // 정방향: 사료 카드
+  let html = entries.map(([cid, ids]) => {
     const ch = chars[cid]; if (!ch) return "";
     const cards = ids.map((id) => ch.knowledge.fragments.find((f) => f.id === id)).filter(Boolean);
     return `<div class="dogam-group"><h3>${ch.profile.displayName} · ${cards.length}장</h3>` +
       cards.map((f) => `<div class="dogam-card"><div class="dc-topic">${f.topic}</div><div class="dc-content">${f.content}</div><div class="dc-src">${f.source.split("/")[0].slice(0, 46)}</div></div>`).join("") +
       `</div>`;
   }).join("");
+
+  // 역모드: 철학 카드 — "이 철학을, 나는 이런 말로 지켜냈다"
+  html += revEntries.map(([cid, cards]) => {
+    const name = chars[cid]?.cards?.figure?.displayName || cid;
+    const list = Object.values(cards);
+    return `<div class="dogam-group dogam-group--rev"><h3>🃏 ${name} 철학 카드 · ${list.length}장</h3>` +
+      list.map((c) =>
+        `<div class="dogam-card dogam-card--rev">
+          <div class="dc-topic">${c.card}</div>
+          <div class="dc-content">${c.philosophy}</div>
+          <div class="dc-mine">내 반박 — “${c.myInput}”</div>
+          <div class="dc-src">vs ${c.speaker}</div>
+        </div>`
+      ).join("") + `</div>`;
+  }).join("");
+
+  el.innerHTML = html;
 }
 
 // 시작 시 판정 프록시 health 체크 → 서버가 없거나 키가 없으면 드롭다운을 자동 조정
@@ -610,9 +740,8 @@ async function onTurn(e) {
   if (state.status !== "CONTINUE") showEndGate();
 }
 
-// ── 종료 게이트: 마지막 대사 확인 후 결과로 ──
+// ── 종료 게이트: 마지막 대사 확인 후 '결과 보기 ▶' 클릭으로만 진행(자동 진행 없음) ──
 // win: 승리 여부, onGo: 결과화면으로 넘길 때 부를 함수(기본=정방향 endGame)
-let endGateTimer = null;
 function showEndGate(win = state?.status === "WIN", onGo = endGame) {
   $("turn-input").disabled = true;
   $("turn-form").querySelector("button[type=submit]").disabled = true;
@@ -620,17 +749,14 @@ function showEndGate(win = state?.status === "WIN", onGo = endGame) {
   gate.type = "button";
   gate.id = "end-gate";
   gate.className = "end-gate";
-  gate.innerHTML = `<span class="eg-label">${win ? "설득이 통했다!" : "설득이 끝났다…"}</span><span class="eg-arrow">결과 보기 ▶</span><span class="eg-bar"></span>`;
+  gate.innerHTML = `<span class="eg-label">${win ? "설득이 통했다!" : "설득이 끝났다…"}</span><span class="eg-arrow">결과 보기 ▶</span>`;
   $("log").appendChild(gate);
   $("log").scrollTop = $("log").scrollHeight;
-  const go = () => {
-    clearTimeout(endGateTimer); endGateTimer = null;
+  gate.addEventListener("click", () => {
     $("turn-input").disabled = false;
     $("turn-form").querySelector("button[type=submit]").disabled = false;
     onGo();
-  };
-  gate.addEventListener("click", go);
-  endGateTimer = setTimeout(go, 7000); // 7초 후 자동 진행(진행바와 동기화)
+  }, { once: true });
 }
 
 // 판정 결과(대사+출처+등급) 렌더
@@ -774,9 +900,67 @@ function buildShareCard() {
   g.textAlign = "left";
   return cv;
 }
+// 역모드 공유 카드(작업4): 지킨 철학 카드 + 대표 반박(첫 strong)
+function buildRevShareCard() {
+  const win = rev.gauge >= rev.goal;
+  const figure = rev.cards.figure || {};
+  const seal = "#a8322a", gold = "#ad8234", ink = "#221d15", accent = "#5a4b8a";
+  const W = 1080, H = 1350, cv = document.createElement("canvas");
+  cv.width = W; cv.height = H;
+  const g = cv.getContext("2d");
+
+  g.fillStyle = "#f4ecd7"; g.fillRect(0, 0, W, H);
+  g.strokeStyle = gold; g.lineWidth = 3; g.strokeRect(40, 40, W - 80, H - 80);
+  g.strokeStyle = "#cdbf9d"; g.lineWidth = 1.5; g.strokeRect(54, 54, W - 108, H - 108);
+  g.fillStyle = accent; g.fillRect(54, 54, W - 108, 10);
+
+  g.textBaseline = "top"; g.textAlign = "left";
+  g.fillStyle = ink; g.font = "800 46px 'Nanum Myeongjo', serif"; g.fillText("EXTRA", 92, 96);
+  g.fillStyle = "#7c7059"; g.font = "500 24px 'Noto Sans KR', sans-serif"; g.fillText("번외 · 역설득", 94, 152);
+  g.save(); g.translate(W - 138, 132); g.rotate(-0.12);
+  g.fillStyle = seal; roundRect(g, -46, -34, 92, 100, 10); g.fill();
+  g.fillStyle = "#fff"; g.font = "800 42px 'Nanum Myeongjo', serif"; g.textAlign = "center";
+  g.fillText("端", 0, -20); g.fillText("役", 0, 24); g.restore();
+
+  g.textAlign = "center";
+  g.fillStyle = seal; g.font = "800 66px 'Nanum Myeongjo', serif";
+  g.fillText(win ? "철학을 지켰다" : "흔들렸다", W / 2, 290);
+  g.fillStyle = ink; g.font = "700 42px 'Nanum Myeongjo', serif"; g.fillText(figure.displayName || "미야모토", W / 2, 384);
+  g.fillStyle = "#7c7059"; g.font = "400 26px 'Noto Sans KR', sans-serif";
+  g.fillText(`철학 이해도 ${rev.gauge} · 카드 ${rev.cardsWon.length}장`, W / 2, 440);
+
+  // 획득 철학 카드 목록
+  let y = 540;
+  g.font = "700 34px 'Nanum Myeongjo', serif";
+  for (const c of rev.cardsWon.slice(0, 5)) {
+    g.fillStyle = "#fff8ea";
+    roundRect(g, 160, y - 12, W - 320, 64, 12); g.fill();
+    g.strokeStyle = gold; g.lineWidth = 2; roundRect(g, 160, y - 12, W - 320, 64, 12); g.stroke();
+    g.fillStyle = gold; g.fillText(c.card, W / 2, y);
+    y += 92;
+  }
+  if (!rev.cardsWon.length) {
+    g.fillStyle = "#9a9078"; g.font = "400 30px 'Noto Sans KR', sans-serif";
+    g.fillText("획득한 철학 카드가 없다", W / 2, y); y += 92;
+  }
+
+  // 대표 반박: 첫 strong(가장 먼저 철학을 지켜낸 말)
+  const rep = rev.cardsWon[0]?.myInput || rev.log.find((l) => l.outcome === "strong")?.myInput;
+  if (rep) {
+    g.fillStyle = "#4a4132"; g.font = "italic 32px 'Nanum Myeongjo', serif";
+    wrapText(g, `“${rep}”`, W - 280).slice(0, 3).forEach((ln, i) => g.fillText(ln, W / 2, y + 26 + i * 46));
+  }
+
+  g.fillStyle = seal; g.font = "700 40px 'Nanum Myeongjo', serif"; g.fillText("당신의 철학은 흔들리지 않는가?", W / 2, 1130);
+  g.fillStyle = "#9a9078"; g.font = "400 24px 'Noto Sans KR', sans-serif"; g.fillText("EXTRA · 역사에 끼어든 단역", W / 2, 1210);
+  g.textAlign = "left";
+  return cv;
+}
+
 async function saveCard() {
   try { await document.fonts.ready; } catch (_) {}
-  buildShareCard().toBlob(async (blob) => {
+  const cardCv = (rev && rev.done) ? buildRevShareCard() : buildShareCard();
+  cardCv.toBlob(async (blob) => {
     if (!blob) return;
     const file = new File([blob], "extra-card.png", { type: "image/png" });
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
