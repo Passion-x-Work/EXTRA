@@ -42,14 +42,25 @@ function saveRevSession() {
   all[charId] = { log: rev.log, gauge: rev.gauge, win: rev.gauge >= rev.goal, ts: Date.now() };
   try { localStorage.setItem(REV_LOG_KEY, JSON.stringify(all)); } catch (_) {}
 }
-// 철학 카드 획득 기록(인물별·논거별). 이미 있으면 유지(첫 획득의 내 반박을 보존).
-function addRevCard(argId, card, philosophy, myInput, speaker) {
+// 반박 등급: 탁월=금(gold) / 정합=은(silver) / 그 외 방어=동(bronze)
+const GRADE_RANK = { bronze: 1, silver: 2, gold: 3 };
+const GRADE_KO = { bronze: "브론즈", silver: "실버", gold: "골드" };
+const cardGrade = (verdictGrade) => verdictGrade === "탁월" ? "gold" : verdictGrade === "정합" ? "silver" : "bronze";
+
+// 철학 카드 획득/성장 기록(인물별·논거별). 더 높은 등급 반박으로만 갱신(best-rebuttal).
+// 반환: { status: "new"|"upgrade"|"keep", grade, from? } → 획득/승급 연출용
+function addRevCard(argId, card, philosophy, myInput, speaker, grade = "silver") {
   const d = loadRevDogam();
   const mine = (d[charId] ??= {});
-  if (!mine[argId]) {
-    mine[argId] = { card, philosophy, myInput, speaker, ts: Date.now() };
+  const cur = mine[argId];
+  let status = "keep", from = null;
+  if (!cur) status = "new";
+  else if ((GRADE_RANK[grade] || 0) > (GRADE_RANK[cur.grade] || 0)) { status = "upgrade"; from = cur.grade; }
+  if (status !== "keep") {
+    mine[argId] = { card, philosophy, myInput, speaker, grade, ts: Date.now() };
     try { localStorage.setItem(REV_DOGAM_KEY, JSON.stringify(d)); } catch (_) {}
   }
+  return { status, grade, from };
 }
 
 // ── 사료 도감(localStorage) ──
@@ -389,18 +400,23 @@ async function onReverseTurn(e) {
                  : `[동조 ${r.delta}]`;
   addLine(tagLabel, "grade-tag" + (excellent ? " grade-tag--excellent" : ""));
   if (excellent) excellentBurst();
-  if (r.cardWon) addLine(`🃏 ${r.cardWon} 획득`, "grade-tag");
   revPortrait(rev.speaker, r.mood);   // 판정 mood로 표정 전환
   renderRevGauge();
 
-  // 공방 기록(작업1) + 철학 카드 즉시 수집(작업2: 카드 + 그때의 내 반박)
+  // 공방 기록(작업1) + 철학 카드 즉시 수집/성장(작업2: 카드 + 그때의 내 반박 + 등급)
   const curArg = rev.cards.arguments[rev.index];
+  const grade = cardGrade(r.verdict.grade); // 탁월=gold / 정합=silver / 그 외=bronze
   rev.log.push({ argId: curArg.id, speaker: rev.speaker, aiLine: curArg.aiLine,
                  myInput: input, outcome: r.outcome, grade: r.verdict.grade,
                  delta: r.delta, cardWon: r.cardWon || null });
   if (r.cardWon) {
-    rev.cardsWon.push({ argId: curArg.id, card: r.cardWon, myInput: input });
-    addRevCard(curArg.id, r.cardWon, curArg.targetPhilosophy, input, rev.speaker);
+    rev.cardsWon.push({ argId: curArg.id, card: r.cardWon, myInput: input, grade });
+    const res = addRevCard(curArg.id, r.cardWon, curArg.targetPhilosophy, input, rev.speaker, grade);
+    // 획득/승급 연출
+    if (res.status === "upgrade")
+      addLine(`⬆️ ${r.cardWon} 등급 상승! ${GRADE_KO[res.from]} → ${GRADE_KO[grade]}`, `grade-tag card-toast card-${grade}`);
+    else
+      addLine(`🃏 ${r.cardWon} 획득 · ${GRADE_KO[grade]}`, `grade-tag card-toast card-${grade}`);
   }
 
   const lastArg = rev.index + 1 >= rev.cards.arguments.length;
@@ -606,19 +622,29 @@ function renderDogam() {
       `</div>`;
   }).join("");
 
-  // 역모드: 철학 카드 — "이 철학을, 나는 이런 말로 지켜냈다"
-  html += revEntries.map(([cid, cards]) => {
-    const name = chars[cid]?.cards?.figure?.displayName || cid;
-    const list = Object.values(cards);
-    return `<div class="dogam-group dogam-group--rev"><h3>🃏 ${name} 철학 카드 · ${list.length}장</h3>` +
-      list.map((c) =>
-        `<div class="dogam-card dogam-card--rev">
-          <div class="dc-topic">${c.card}</div>
-          <div class="dc-content">${c.philosophy}</div>
-          <div class="dc-mine">내 반박 — “${c.myInput}”</div>
-          <div class="dc-src">vs ${c.speaker}</div>
-        </div>`
-      ).join("") + `</div>`;
+  // 역모드: 철학 카드 — 전체 슬롯(획득/🔒미획득) + 등급 + 진척도("이 철학을 나는 이런 말로 지켜냈다")
+  const revChars = Object.keys(chars).filter((id) => chars[id].cards);
+  html += revChars.map((cid) => {
+    const data = chars[cid].cards;
+    const name = data.figure?.displayName || cid;
+    const args = data.arguments || [];
+    const earned = rd[cid] || {};
+    const owned = Object.keys(earned).length;
+    const gold = Object.values(earned).filter((c) => c.grade === "gold").length;
+    return `<div class="dogam-group dogam-group--rev">` +
+      `<h3>🃏 ${name} 철학 카드 · ${owned}/${args.length} <small class="dg-prog">골드 ${gold}/${args.length}</small></h3>` +
+      `<div class="phil-grid">` +
+      args.map((a) => {
+        const c = earned[a.id];
+        if (!c) return `<div class="phil-slot locked"><div class="ps-name">🔒 ？？？</div><div class="ps-phil">아직 못 지킨 철학</div></div>`;
+        return `<div class="phil-slot card-${c.grade}">` +
+          `<div class="ps-grade">${GRADE_KO[c.grade]}</div>` +
+          `<div class="ps-name">${c.card}</div>` +
+          `<div class="ps-phil">${(c.philosophy || "").split("—")[0].trim()}</div>` +
+          `<div class="ps-mine">내 반박 — “${c.myInput}”</div>` +
+          `</div>`;
+      }).join("") +
+      `</div></div>`;
   }).join("");
 
   el.innerHTML = html;

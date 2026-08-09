@@ -356,6 +356,27 @@ button, select, input { font-family: inherit; }
 .dogam-group--rev h3 { color: #5a4b8a; }
 .dogam-card--rev { border-left-color: #5a4b8a; }
 .dc-mine { font-size: .78rem; color: #5a4b8a; font-style: italic; line-height: 1.5; margin: 5px 0 3px; padding: 6px 9px; background: rgba(90,75,138,.07); border-radius: 6px; }
+
+/* 철학 카드 컬렉션: 전체 슬롯(획득/잠김) + 등급 */
+.dg-prog { font-family: var(--sans); font-weight: 700; font-size: .72rem; color: #b58a1c; margin-left: 6px; }
+.phil-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.phil-slot { border: 1.5px solid var(--line); border-radius: 10px; padding: 9px 11px; background: #fdf6e6; position: relative; }
+.phil-slot.locked { background: repeating-linear-gradient(135deg, #efe7d4 0 8px, #e9e0cb 8px 16px); border-style: dashed; color: #9a9078; text-align: center; display: flex; flex-direction: column; justify-content: center; gap: 3px; }
+.phil-slot .ps-grade { position: absolute; top: 7px; right: 9px; font-size: .62rem; font-weight: 800; letter-spacing: .5px; padding: 1px 6px; border-radius: 999px; color: #fff; }
+.phil-slot .ps-name { font-family: var(--serif); font-weight: 800; font-size: .95rem; color: var(--ink); }
+.phil-slot.locked .ps-name { font-family: var(--sans); color: #9a9078; }
+.phil-slot .ps-phil { font-size: .74rem; color: var(--ink-soft); line-height: 1.45; margin-top: 2px; }
+.phil-slot .ps-mine { font-size: .72rem; color: #5a4b8a; font-style: italic; margin-top: 5px; padding: 5px 8px; background: rgba(90,75,138,.07); border-radius: 6px; line-height: 1.45; }
+/* 등급 테두리·배지 색 */
+.card-bronze { border-color: #b3855a; } .card-bronze .ps-grade { background: #b3855a; }
+.card-silver { border-color: #9aa3ad; } .card-silver .ps-grade { background: #8b96a3; }
+.card-gold   { border-color: #d9a021; box-shadow: 0 0 0 1px #d9a021 inset, 0 2px 12px rgba(217,160,33,.35); } .card-gold .ps-grade { background: #d9a021; }
+/* 카드 획득/승급 인게임 토스트 */
+.card-toast { align-self: center; padding: 3px 12px; border-radius: 999px; color: #fff !important; text-shadow: none !important; font-weight: 800; }
+.card-toast.card-bronze { background: #b3855a; }
+.card-toast.card-silver { background: #8b96a3; }
+.card-toast.card-gold   { background: linear-gradient(90deg, #e6ad25, #c8901f); box-shadow: 0 0 14px rgba(217,160,33,.6); }
+
 /* 결과화면: 철학 카드 + 내 반박 */
 .rev-won { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 3px; margin-top: 6px; }
 .rev-won-input { font-size: .72rem; color: #6a6151; font-style: italic; }
