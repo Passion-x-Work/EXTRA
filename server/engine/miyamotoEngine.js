@@ -164,9 +164,15 @@ export async function judgeRebuttal(cards, index, playerInput, gauge, opts = {})
   const defended = outcome === "strong" || outcome === "weak";
 
   // strong이거나, 호출부가 최종 공방이라고 알리면 본 점수. 아니면 중간 소폭(±소량).
+  // weak-final은 onDefend/2 — '겨우 넘긴' 방어라 깔끔한 strong(본점수)보다 낮게.
+  // (weak+weak 합산이 strong 한 방을 넘지 않도록: ⅓+½ < 1)
   const isFinal = outcome === "strong" || opts.isFinal;
   let delta;
-  if (isFinal) delta = defended ? arg.onDefend : arg.onComply;
+  if (isFinal) {
+    if (outcome === "strong") delta = arg.onDefend;
+    else if (outcome === "weak") delta = Math.round((arg.onDefend || 0) / 2);
+    else delta = arg.onComply;
+  }
   else delta = outcome === "weak" ? Math.round((arg.onDefend || 0) / 3) : Math.round((arg.onComply || 0) / 3);
 
   const nextGauge = Math.max(0, Math.min(100, gauge + delta));

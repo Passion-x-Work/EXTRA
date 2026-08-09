@@ -203,6 +203,10 @@ button, select, input { font-family: inherit; }
 }
 .msg.missed b { color: var(--seal); }
 .msg.missed small { color: #9a7a72; font-size: .7rem; }
+/* 겨우 넘김(weak-final): 방어는 했지만 카드 미획득 — 경고 톤(황갈색) */
+.msg.missed--barely { background: rgba(173,130,52,.1); border-color: var(--gold); color: #6a5a30; }
+.msg.missed--barely b { color: var(--gold); }
+.msg.missed--barely small { color: #9a8a60; }
 .msg.hint b { color: var(--seal); }
 .hint-src { font-size: .66rem; color: #9a9078; margin-top: 5px; }
 

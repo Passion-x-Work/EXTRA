@@ -322,12 +322,19 @@ function addBridge(text) {
   $("log").scrollTop = $("log").scrollHeight;
 }
 
-// 공방 소진으로 철학을 놓쳤을 때: 무엇을 잃었는지 명시(카드 유실 + 다음 논거로 넘어감을 안내)
+// 공방 소진 시 논거 마무리 안내.
+//   comply(동조) → 💔 철학을 놓쳤다(카드 유실)
+//   weak(약한 방어) → 😮‍💨 겨우 넘겼다(게이지는 방어했지만 확신이 없어 카드는 미획득)
 function addMissedNotice(arg, outcome) {
   const div = document.createElement("div");
-  div.className = "msg missed";
-  const why = outcome === "comply" ? "유혹에 동조해" : "반박이 부족해";
-  div.innerHTML = `💔 <b>철학을 놓쳤다</b> — ${why} <b>${arg.card || "이 논거의 카드"}</b>를 지키지 못했다.<br/><small>놓친 철학: ${arg.targetPhilosophy.split("—")[0].trim()} · 대화는 다음 주제로 넘어간다</small>`;
+  const phil = arg.targetPhilosophy.split("—")[0].trim();
+  if (outcome === "comply") {
+    div.className = "msg missed";
+    div.innerHTML = `💔 <b>철학을 놓쳤다</b> — 유혹에 동조해 <b>${arg.card || "이 논거의 카드"}</b>를 지키지 못했다.<br/><small>놓친 철학: ${phil} · 대화는 다음 주제로 넘어간다</small>`;
+  } else {
+    div.className = "msg missed missed--barely";
+    div.innerHTML = `😮‍💨 <b>겨우 넘겼다</b> — 흔들리지는 않았지만, 확신이 부족해 <b>${arg.card || "카드"}</b>는 얻지 못했다.<br/><small>${phil} · 대화는 다음 주제로 넘어간다</small>`;
+  }
   $("log").appendChild(div);
   $("log").scrollTop = $("log").scrollHeight;
 }
