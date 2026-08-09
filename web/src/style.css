@@ -185,6 +185,28 @@ button, select, input { font-family: inherit; }
 .msg.latest { font-weight: 700; }            /* 최신 대화 강조 */
 .msg.npc.latest { font-weight: 400; font-size: 1.02em; } /* 인물 대사는 명조 유지, 크기로 강조 */
 .msg.hint { align-self: stretch; max-width: 100%; background: #fff3d6; border: 1px dashed var(--gold); color: #5a4e30; font-family: var(--sans); font-size: .82rem; line-height: 1.5; box-shadow: 0 2px 8px rgba(0,0,0,.12); }
+/* 역모드 상황 내레이션(무대 지시문) — 화자/시간 전환 브릿지 */
+.msg.bridge {
+  align-self: center; max-width: 92%; text-align: center;
+  background: rgba(0,0,0,.28); color: #efe6cf; border: none;
+  font-family: var(--sans); font-size: .78rem; font-style: italic; line-height: 1.55;
+  padding: 8px 18px; border-radius: 20px; box-shadow: none;
+}
+/* 역모드 화자 대비(S4): 하루=따뜻한 코랄(열정·유행) / 쿠로다=차가운 블루그레이(냉정·데이터) */
+.msg.npc--haru { background: #fdeade; border-color: #eec4a8; border-left: 3px solid #e07a4f; }
+.msg.npc--kuroda { background: #e7ecf2; border-color: #bccadb; border-left: 3px solid #4a6b8f; }
+/* 철학을 놓쳤을 때 패널티 안내 */
+.msg.missed {
+  align-self: stretch; max-width: 100%; text-align: center;
+  background: rgba(168,50,42,.08); border: 1px dashed var(--seal); color: #7a3a34;
+  font-family: var(--sans); font-size: .8rem; line-height: 1.55; box-shadow: none;
+}
+.msg.missed b { color: var(--seal); }
+.msg.missed small { color: #9a7a72; font-size: .7rem; }
+/* 겨우 넘김(weak-final): 방어는 했지만 카드 미획득 — 경고 톤(황갈색) */
+.msg.missed--barely { background: rgba(173,130,52,.1); border-color: var(--gold); color: #6a5a30; }
+.msg.missed--barely b { color: var(--gold); }
+.msg.missed--barely small { color: #9a8a60; }
 .msg.hint b { color: var(--seal); }
 .hint-src { font-size: .66rem; color: #9a9078; margin-top: 5px; }
 
@@ -207,24 +229,19 @@ button, select, input { font-family: inherit; }
 .hint-btn:disabled { opacity: .38; cursor: not-allowed; }
 .turn-count { text-align: center; font-size: .68rem; color: var(--muted, #a89c82); padding: 4px 0 10px; }
 
-/* 종료 게이트: 마지막 대사 확인 후 결과 보기(클릭 또는 7초 자동) */
+/* 종료 게이트: 마지막 대사 확인 후 '결과 보기 ▶' 클릭으로만 진행 */
 .end-gate {
   align-self: center; position: relative; overflow: hidden; cursor: pointer;
   display: flex; flex-direction: column; align-items: center; gap: 3px;
-  margin: 6px 0 4px; padding: 12px 26px 15px;
+  margin: 6px 0 4px; padding: 12px 26px;
   background: #fdf6e6; border: 1.5px solid var(--gold); border-radius: 13px;
   box-shadow: 0 6px 18px rgba(0,0,0,.22);
   animation: gatePulse 1.6s ease-in-out infinite;
 }
+.end-gate:hover { border-color: var(--seal); box-shadow: 0 8px 24px rgba(168,50,42,.28); }
 .eg-label { font-family: var(--serif); font-weight: 800; font-size: .95rem; color: var(--seal); }
 .eg-arrow { font-size: .78rem; font-weight: 700; color: var(--ink-soft); letter-spacing: .5px; }
-.eg-bar {
-  position: absolute; left: 0; bottom: 0; height: 3px; width: 100%;
-  background: var(--gold); transform-origin: left;
-  animation: gateBar 7s linear forwards; /* 자동 진행 타이머와 동기화 */
-}
 @keyframes gatePulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.03); } }
-@keyframes gateBar { from { transform: scaleX(1); } to { transform: scaleX(0); } }
 
 /* ══════════ 결과(낙관 문서) ══════════ */
 #scr-result {
@@ -297,6 +314,13 @@ button, select, input { font-family: inherit; }
 .dc-topic { font-family: var(--serif); font-weight: 700; font-size: .92rem; color: var(--ink); }
 .dc-content { font-size: .82rem; color: var(--ink-soft); line-height: 1.5; margin: 4px 0; }
 .dc-src { font-size: .68rem; color: #9a9078; }
+/* 역모드 철학 카드: "이 철학을, 나는 이런 말로 지켜냈다" */
+.dogam-group--rev h3 { color: #5a4b8a; }
+.dogam-card--rev { border-left-color: #5a4b8a; }
+.dc-mine { font-size: .78rem; color: #5a4b8a; font-style: italic; line-height: 1.5; margin: 5px 0 3px; padding: 6px 9px; background: rgba(90,75,138,.07); border-radius: 6px; }
+/* 결과화면: 철학 카드 + 내 반박 */
+.rev-won { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 3px; margin-top: 6px; }
+.rev-won-input { font-size: .72rem; color: #6a6151; font-style: italic; }
 
 /* 모바일(<760px): 3단 배치 — 위=대화(말풍선), 가운데=인물 이미지, 맨 아래=입력창.
    대화는 상단에서 스크롤, 인물은 세로 중앙에 노출, 입력창은 바닥 고정. */

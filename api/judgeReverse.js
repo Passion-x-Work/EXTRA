@@ -10,9 +10,9 @@ export default async function handler(req, res) {
     return;
   }
   try {
-    const { charId = "miyamoto", argIndex = 0, input, gauge = 0, provider, tone } = req.body || {};
+    const { charId = "miyamoto", argIndex = 0, input, gauge = 0, provider, tone, isFinal } = req.body || {};
     const cards = loadCards(charId);
-    const result = await judgeRebuttal(cards, argIndex, input, gauge, { provider, mode: "reverse-persuasion", tone });
+    const result = await judgeRebuttal(cards, argIndex, input, gauge, { provider, mode: "reverse-persuasion", tone, isFinal });
     res.status(200).json(result);
   } catch (e) {
     res.status(500).json({ error: String(e) });

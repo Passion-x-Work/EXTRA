@@ -44,16 +44,21 @@ console.log("\n[2] 방어 성공 → 게이지 상승");
 }
 
 // ── 3. 동조형 반박 (유혹 문구를 그대로 수용) ────────────────────
-console.log("\n[3] 동조 → 게이지 하락");
+// 멀티턴 규칙: 중간 공방은 onComply의 1/3(소폭), 최종 공방(isFinal)에만 본 점수.
+console.log("\n[3] 동조 → 게이지 하락 (중간 1/3 · 최종 본점수)");
 {
-  // arg-02: 유혹(스토리 먼저)에 그대로 동조
-  const r = await judgeRebuttal(
-    cards, 1,
-    "맞아요, 멋진 스토리부터 완성하고 거기 맞춰 시스템을 짜는 게 좋겠네요.",
-    50, OPTS
-  );
-  ok(!r.defended && r.delta === cards.arguments[1].onComply,
-     `arg-02 defended=${r.defended}, delta=${r.delta}, gauge=${r.gauge}, grade=${r.verdict.grade}`);
+  const INPUT = "맞아요, 멋진 스토리부터 완성하고 거기 맞춰 시스템을 짜는 게 좋겠네요.";
+  const onComply = cards.arguments[1].onComply;
+
+  // 중간 공방: 소폭(÷3)만 하락
+  const mid = await judgeRebuttal(cards, 1, INPUT, 50, OPTS);
+  ok(!mid.defended && mid.delta === Math.round(onComply / 3),
+     `arg-02 중간 공방: defended=${mid.defended}, delta=${mid.delta} (기대 ${Math.round(onComply / 3)}), grade=${mid.verdict.grade}`);
+
+  // 최종 공방(isFinal): 본 점수 확정
+  const fin = await judgeRebuttal(cards, 1, INPUT, 50, { ...OPTS, isFinal: true });
+  ok(!fin.defended && fin.delta === onComply,
+     `arg-02 최종 공방: defended=${fin.defended}, delta=${fin.delta} (기대 ${onComply}), gauge=${fin.gauge}`);
 }
 
 // ── 4. 게이지 클램프 (0 하한 / 100 상한) ────────────────────────

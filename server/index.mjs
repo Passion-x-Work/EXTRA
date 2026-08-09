@@ -40,9 +40,9 @@ createServer(async (req, res) => {
     req.on("data", (c) => (raw += c));
     req.on("end", async () => {
       try {
-        const { charId = "miyamoto", argIndex = 0, input, gauge = 0, provider, tone } = JSON.parse(raw || "{}");
+        const { charId = "miyamoto", argIndex = 0, input, gauge = 0, provider, tone, isFinal } = JSON.parse(raw || "{}");
         const cards = loadCards(charId);
-        const result = await judgeRebuttal(cards, argIndex, input, gauge, { provider, mode: "reverse-persuasion", tone });
+        const result = await judgeRebuttal(cards, argIndex, input, gauge, { provider, mode: "reverse-persuasion", tone, isFinal });
         res.writeHead(200, { "content-type": "application/json" });
         res.end(JSON.stringify(result));
       } catch (e) {

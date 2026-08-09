@@ -96,39 +96,96 @@ function extractKeywords(text) {
 }
 
 // ── 턴 오프너: AI(하루/쿠로다)가 먼저 던지는 대사 ──
+// bridge: 논거 전 상황 내레이션. arg.bridge가 있으면 그대로, 없고 화자가 바뀌면 범용 폴백.
+const GENERIC_BRIDGE = "그때, 옆에 있던 {name}이(가) 말을 이어받는다.";
 export function openTurn(cards, index) {
   const arg = cards.arguments[index];
   if (!arg) return null;
   const persona = cards.personas.find((p) => p.id === arg.speaker);
+  const prev = index > 0 ? cards.arguments[index - 1] : null;
+  const name = persona ? persona.name : arg.speaker;
+  let bridge = arg.bridge || null;
+  if (!bridge && prev && prev.speaker !== arg.speaker)
+    bridge = GENERIC_BRIDGE.replace("{name}", name); // 화자 전환인데 수기 브릿지 없음 → 폴백
   return {
     index,
     argId: arg.id,
-    speaker: persona ? persona.name : arg.speaker,
+    speaker: name,
     speakerRole: persona ? persona.role : "",
+    bridge,
     aiLine: arg.aiLine,
     kind: arg.kind,
   };
 }
 
-// ── 플레이어 반박 판정 + 게이지 반영 ──
-// gauge 계산은 접근 A: 방어 계열이면 += onDefend, 동조 계열이면 += onComply.
+// 등급 → 멀티턴 결과(strong/weak/comply) + 표정 힌트
+function outcomeFromGrade(grade) {
+  if (grade === "탁월" || grade === "정합") return { outcome: "strong", mood: "shaken" };
+  if (grade === "부분") return { outcome: "weak", mood: "pressing" };
+  return { outcome: "comply", mood: "smug" }; // 불합치·역효과
+}
+
+// 논거[index]의 재설득 대사(rebuttal회차: 1,2…). 없으면 범용 폴백.
+// outcome에 따라 대사 풀이 달라진다:
+//   weak(약한 방어) → retries: 같은 각도를 더 파고드는 재설득
+//   comply(동조)    → retriesComply: "정말 넘어온 거냐"고 확인하며 되돌릴 기회를 주는 대사
+//   (동조했는데 계속 설득하는 대사가 나오면 흐름이 안 이어지므로 반드시 분리)
+const GENERIC_RETRY = [
+  "그건 그렇다 치고 — 그럼 이건 어때요?",
+  "흠, 그래도 현실은 좀 다르지 않나요?",
+  "말은 알겠는데, 그걸론 아직 부족한데요?",
+];
+const GENERIC_RETRY_COMPLY = [
+  "오? 웬일로 순순히 넘어오시네요… 정말 그렇게 가도 후회 없으시겠어요? 마지막으로 다시 묻죠.",
+  "어라, 동의하시는 거예요? …진심이신지 한 번만 더 확인할게요.",
+];
+export function getRetryLine(cards, index, attempt, outcome = "weak") {
+  const arg = cards.arguments[index];
+  const persona = cards.personas.find((p) => p.id === arg.speaker);
+  const speaker = persona ? persona.name : arg.speaker;
+  const pool = outcome === "comply"
+    ? (arg.retriesComply || GENERIC_RETRY_COMPLY)
+    : (arg.retries || GENERIC_RETRY);
+  const line = pool[attempt] || pool[pool.length - 1] || GENERIC_RETRY[attempt % GENERIC_RETRY.length];
+  return { speaker, line };
+}
+
+// ── 플레이어 반박 판정 + 게이지 반영 (멀티턴) ──
+// opts.isFinal : 이 반박이 논거의 마지막 공방인가(카운트 소진 or strong).
+//   중간 공방은 게이지 소폭, 최종 공방에만 본 점수(onDefend/onComply) 1회 적용.
 export async function judgeRebuttal(cards, index, playerInput, gauge, opts = {}) {
   const arg = cards.arguments[index];
   if (!arg) throw new Error("no such arg: " + index);
 
   const character = argToCharacter(cards, arg);
-  const verdict = await judge(playerInput, character, opts); // ← judge.js 그대로 재사용
+  const verdict = await judge(playerInput, character, opts);
 
-  const defended = ["탁월", "정합", "부분"].includes(verdict.grade);
-  const delta = defended ? arg.onDefend : arg.onComply;
+  const { outcome, mood } = outcomeFromGrade(verdict.grade);
+  const defended = outcome === "strong" || outcome === "weak";
+
+  // strong이거나, 호출부가 최종 공방이라고 알리면 본 점수. 아니면 중간 소폭(±소량).
+  // weak-final은 onDefend/2 — '겨우 넘긴' 방어라 깔끔한 strong(본점수)보다 낮게.
+  // (weak+weak 합산이 strong 한 방을 넘지 않도록: ⅓+½ < 1)
+  const isFinal = outcome === "strong" || opts.isFinal;
+  let delta;
+  if (isFinal) {
+    if (outcome === "strong") delta = arg.onDefend;
+    else if (outcome === "weak") delta = Math.round((arg.onDefend || 0) / 2);
+    else delta = arg.onComply;
+  }
+  else delta = outcome === "weak" ? Math.round((arg.onDefend || 0) / 3) : Math.round((arg.onComply || 0) / 3);
+
   const nextGauge = Math.max(0, Math.min(100, gauge + delta));
 
   return {
     verdict,
+    outcome,          // "strong" | "weak" | "comply"
+    mood,             // 표정 힌트: "shaken" | "pressing" | "smug"
     defended,
     delta,
+    isFinal,
     gauge: nextGauge,
-    cardWon: defended && verdict.grade !== "부분" ? arg.card : null, // 부분은 카드 미획득(튜닝 가능)
+    cardWon: outcome === "strong" && verdict.grade !== "부분" ? arg.card : null,
     win: nextGauge >= (cards.winCondition?.goalGauge || 100),
   };
 }
