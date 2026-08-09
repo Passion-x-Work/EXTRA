@@ -293,6 +293,13 @@ button, select, input { font-family: inherit; }
 @keyframes stamp { 0% { transform: rotate(-9deg) scale(2.2); opacity: 0; } 60% { opacity: 1; } 100% { transform: rotate(-9deg) scale(1); opacity: 1; } }
 .card-title { font-family: var(--serif); font-size: 1.4rem; font-weight: 800; color: var(--seal); margin-bottom: 14px; }
 .card-line { font-family: var(--serif); font-style: italic; color: #4a4132; margin-bottom: 18px; min-height: 1.2em; line-height: 1.6; }
+/* 패배 놀림 대사 — 인물이 의기양양하게 약올리는 톤 */
+.card-line.taunt {
+  font-style: normal; font-weight: 700; color: var(--seal);
+  background: rgba(168,50,42,.08); border-left: 3px solid var(--seal);
+  padding: 10px 14px; border-radius: 8px; text-align: left;
+}
+.card-line.taunt::before { content: "😏 "; }
 .card-meta { display: flex; justify-content: center; gap: 18px; align-items: center; margin-bottom: 14px; }
 .card-meta span:first-child { font-size: .85rem; color: var(--ink-soft); }
 .grade { font-family: var(--serif); font-size: 2.1rem; font-weight: 800; color: var(--gold); }

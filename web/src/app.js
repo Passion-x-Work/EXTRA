@@ -443,7 +443,16 @@ function revEnd(win) {
 function revShowResult(win) {
   const sc = rev.scenario || {};
   $("result-title").textContent = win ? "철학을 지켰다" : "흔들렸다";
-  $("result-line").textContent = win ? (sc.winScene?.text || "") : (sc.loseScene?.text || "");
+  const rl = $("result-line");
+  if (win) {
+    rl.textContent = sc.winScene?.text || "";
+    rl.classList.remove("taunt");
+  } else {
+    // 패배 = 하루/쿠로다가 의기양양하게 놀린다(킹받는 엔딩)
+    const t = pickTaunt(sc.loseScene?.taunt, rev.index + (rev.log?.length || 0)) || sc.loseScene?.text || "";
+    rl.textContent = `${rev.speaker || "하루"}: "${t}"`;
+    rl.classList.add("taunt");
+  }
   $("result-turns").textContent = `${Math.min(rev.index + 1, rev.cards.arguments.length)}논거`;
   $("result-grade").textContent = win ? "정복" : "—";
   $("result-cta").textContent = win ? (sc.winScene?.historicalNote || "") : (sc.loseScene?.encouragement || "");
@@ -471,11 +480,23 @@ function revShowResult(win) {
   }
 }
 
+// 패배 놀림 대사 픽(배열에서 seed로 결정론적 선택)
+const pickTaunt = (arr, seed = 0) => (arr && arr.length) ? arr[Math.abs(seed) % arr.length] : null;
+
 function endGame() {
   const won = state.status === "WIN";
   const scn = chars[charId].scenario;
   $("result-title").textContent = won ? "설득 성공" : "다시 도전";
-  $("result-line").textContent = firstInputSaved ? `“${firstInputSaved}”` : "";
+  const rl = $("result-line");
+  if (won) {
+    rl.textContent = firstInputSaved ? `“${firstInputSaved}”` : "";
+    rl.classList.remove("taunt");
+  } else {
+    // 패배 = 인물이 의기양양하게 놀린다(킹받는 엔딩 → 복수심 재도전)
+    const t = pickTaunt(scn.loseScene?.taunt, state.turn + (firstInputSaved.length || 0)) || scn.loseScene?.text || "";
+    rl.textContent = `${chars[charId].profile.displayName}: "${t}"`;
+    rl.classList.add("taunt");
+  }
   $("result-turns").textContent = state.turn + "턴";
   $("result-grade").textContent = won ? resultBand(state.turn, cfg) : "—";
   const note = won ? scn.winScene?.historicalNote : scn.loseScene?.historicalNote;
