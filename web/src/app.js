@@ -488,13 +488,13 @@ function revShowResult(win) {
   seal.classList.remove("stamped");
   $("result-card").classList.remove("pop-in");
   if (win) {
-    showVictoryClip(); // 승리 클립(해당 인물 클립이 있으면 랜덤 재생)
+    showVictoryClip(); // 승리: 하루/쿠로다 댄스 클립 랜덤
     requestAnimationFrame(() => {
       $("result-card").classList.add("pop-in"); // 카드 팝인
       seal.classList.add("stamped");            // 낙관 쾅
       burstConfetti();                          // 축하 꽃가루
     });
-  } else hideVictoryClip();
+  } else showRevLoseClip(); // 패배: 나를 꺾은 화자의 킹받는 클립(taunt와 세트)
 }
 
 // 패배 놀림 대사 픽(배열에서 seed로 결정론적 선택)
@@ -569,15 +569,25 @@ function endGame() {
   } else hideVictoryClip();
 }
 
-// ── 승리 클립: 인물별 클립 풀에서 랜덤 재생(webm 우선 + mp4 폴백) ──
+// ── 결과 클립: 인물별 클립 풀에서 랜덤 재생(webm 우선 + mp4 폴백) ──
 // 소리 포함. 결과 화면은 '결과 보기 ▶' 클릭 직후라 대부분 소리 재생 허용되지만,
 // 정책상 거부되면 음소거로 폴백해 영상은 항상 나오게 한다.
 const VICTORY_CLIPS = {
   sejong: [1, 2, 3].map((n) => `/Assets/Sejong/victory/SJ-victory-clip${n}`), // .webm/.mp4 확장자는 <source>에서
+  vangogh: [1, 2, 3].map((n) => `/Assets/gogh/victory/GH-victory-clip${n}`),
+  // 미야모토(역모드) 승리: 하루/쿠로다 클립을 한 풀에 합쳐 랜덤
+  miyamoto: [
+    ...[1, 2, 3].map((n) => `/Assets/Reverse/victory/HR-victory-clip${n}`),
+    ...[1, 2, 3].map((n) => `/Assets/Reverse/victory/KR-victory-clip${n}`),
+  ],
 };
-function showVictoryClip() {
+// 역모드 패배: 나를 꺾은 화자가 킹받게 놀리는 클립(taunt 대사와 세트)
+const LOSE_CLIPS = {
+  haru: ["/Assets/Reverse/victory/HR-kingbada"],
+  kuroda: ["/Assets/Reverse/victory/KR-kingbada"],
+};
+function playResultClip(pool) {
   const box = $("victory-clip"), video = $("victory-video");
-  const pool = VICTORY_CLIPS[charId];
   if (!box || !video || !pool || !pool.length) { if (box) box.hidden = true; return; }
   const base = pool[Math.floor(Math.random() * pool.length)];
   video.innerHTML =
@@ -588,6 +598,9 @@ function showVictoryClip() {
   video.muted = false;
   video.play().catch(() => { video.muted = true; video.play().catch(() => {}); }); // 소리 거부 시 음소거 폴백
 }
+const showVictoryClip = () => playResultClip(VICTORY_CLIPS[charId]);
+// 역모드 패배 클립: 마지막 화자(나를 꺾은 쪽)의 kingbada. 없으면 숨김.
+const showRevLoseClip = () => playResultClip(LOSE_CLIPS[REV_SPEAKER_ID[rev?.speaker] || ""]);
 function hideVictoryClip() {
   const box = $("victory-clip"), video = $("victory-video");
   if (!box || !video) return;
