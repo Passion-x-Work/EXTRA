@@ -89,6 +89,10 @@
       <section id="scr-result" class="screen">
         <div class="card" id="result-card">
           <div class="seal" id="win-seal">端<br />役</div>
+          <!-- 승리 클립(인물별, 있을 때만 표시). webm 우선 + mp4 폴백(Safari/iOS) -->
+          <div id="victory-clip" class="victory-clip" hidden>
+            <video id="victory-video" playsinline autoplay loop></video>
+          </div>
           <div id="result-title" class="card-title">설득 성공</div>
           <div id="result-line" class="card-line"></div>
           <div class="card-meta"><span id="result-turns"></span><span id="result-grade" class="grade"></span></div>

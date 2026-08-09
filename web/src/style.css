@@ -292,6 +292,15 @@ button, select, input { font-family: inherit; }
 .seal.stamped { animation: stamp .45s cubic-bezier(.2,1.5,.4,1) forwards; }
 @keyframes stamp { 0% { transform: rotate(-9deg) scale(2.2); opacity: 0; } 60% { opacity: 1; } 100% { transform: rotate(-9deg) scale(1); opacity: 1; } }
 .card-title { font-family: var(--serif); font-size: 1.4rem; font-weight: 800; color: var(--seal); margin-bottom: 14px; }
+/* 승리 클립(세종 댄스 챌린지 등) — 카드 상단, 한지 프레임 안 둥근 영상 */
+.victory-clip { margin: -8px auto 16px; width: min(230px, 72%); }
+.victory-clip video {
+  display: block; width: 100%; border-radius: 14px;
+  border: 2px solid var(--gold); outline: 3px double var(--line); outline-offset: 3px;
+  box-shadow: 0 10px 28px rgba(80,55,20,.35);
+  animation: clipIn .5s cubic-bezier(.3,1.4,.5,1) .15s backwards;
+}
+@keyframes clipIn { from { transform: scale(.7) rotate(-2deg); opacity: 0; } to { transform: scale(1) rotate(0); opacity: 1; } }
 .card-line { font-family: var(--serif); font-style: italic; color: #4a4132; margin-bottom: 18px; min-height: 1.2em; line-height: 1.6; }
 /* 패배 놀림 대사 — 인물이 의기양양하게 약올리는 톤 */
 .card-line.taunt {

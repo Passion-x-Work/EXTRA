@@ -488,12 +488,13 @@ function revShowResult(win) {
   seal.classList.remove("stamped");
   $("result-card").classList.remove("pop-in");
   if (win) {
+    showVictoryClip(); // 승리 클립(해당 인물 클립이 있으면 랜덤 재생)
     requestAnimationFrame(() => {
       $("result-card").classList.add("pop-in"); // 카드 팝인
       seal.classList.add("stamped");            // 낙관 쾅
       burstConfetti();                          // 축하 꽃가루
     });
-  }
+  } else hideVictoryClip();
 }
 
 // 패배 놀림 대사 픽(배열에서 seed로 결정론적 선택)
@@ -559,12 +560,38 @@ function endGame() {
   seal.classList.remove("stamped");
   $("result-card").classList.remove("pop-in");
   if (won) {
+    showVictoryClip(); // 승리 클립(해당 인물 클립이 있으면 랜덤 재생)
     requestAnimationFrame(() => {
       $("result-card").classList.add("pop-in"); // 카드 팝인
       seal.classList.add("stamped");            // 낙관 쾅
       burstConfetti();                          // 축하 꽃가루
     });
-  }
+  } else hideVictoryClip();
+}
+
+// ── 승리 클립: 인물별 클립 풀에서 랜덤 재생(webm 우선 + mp4 폴백) ──
+// 소리 포함. 결과 화면은 '결과 보기 ▶' 클릭 직후라 대부분 소리 재생 허용되지만,
+// 정책상 거부되면 음소거로 폴백해 영상은 항상 나오게 한다.
+const VICTORY_CLIPS = {
+  sejong: [1, 2, 3].map((n) => `/Assets/Sejong/victory/SJ-victory-clip${n}`), // .webm/.mp4 확장자는 <source>에서
+};
+function showVictoryClip() {
+  const box = $("victory-clip"), video = $("victory-video");
+  const pool = VICTORY_CLIPS[charId];
+  if (!box || !video || !pool || !pool.length) { if (box) box.hidden = true; return; }
+  const base = pool[Math.floor(Math.random() * pool.length)];
+  video.innerHTML =
+    `<source src="${base}.webm" type="video/webm" />` +
+    `<source src="${base}.mp4" type="video/mp4" />`;
+  video.load();
+  box.hidden = false;
+  video.muted = false;
+  video.play().catch(() => { video.muted = true; video.play().catch(() => {}); }); // 소리 거부 시 음소거 폴백
+}
+function hideVictoryClip() {
+  const box = $("victory-clip"), video = $("victory-video");
+  if (!box || !video) return;
+  video.pause(); video.innerHTML = ""; box.hidden = true;
 }
 
 // ── 축하 꽃가루(승리 시) — 의존성 없는 경량 캔버스 애니메이션 ──
@@ -1055,7 +1082,7 @@ document.querySelectorAll(".relic[data-char]").forEach((b) =>
 $("turn-form").addEventListener("submit", (e) => { (rev && !rev.done) ? onReverseTurn(e) : onTurn(e); });
 $("hint-btn").addEventListener("click", () => unlockHint()); // 수동 힌트(예산 차감)
 $("save-card").addEventListener("click", saveCard);
-$("retry").addEventListener("click", () => { rev = null; refreshMapSaves(); show("scr-map"); });
+$("retry").addEventListener("click", () => { hideVictoryClip(); rev = null; refreshMapSaves(); show("scr-map"); });
 // 뒤로가기: 진행 자동 저장 후 지도로 (역모드는 저장 없이 나감)
 $("back-map").addEventListener("click", () => { if (!rev) saveGame(); rev = null; refreshMapSaves(); show("scr-map"); });
 // 말투 슬라이딩 스위치(정통↔밈): 즉시 로그를 새 말투로 리렌더
