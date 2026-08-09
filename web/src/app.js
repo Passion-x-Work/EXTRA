@@ -382,10 +382,13 @@ async function onReverseTurn(e) {
 
   rev.gauge = r.gauge;
   addLine(r.verdict.line, "npc");
-  const tagLabel = r.outcome === "strong" ? `[방어 +${r.delta}]`
-                 : r.outcome === "weak"   ? `[약한 방어 +${r.delta}]`
+  const excellent = r.verdict.grade === "탁월";
+  const tagLabel = excellent               ? `[✨ 탁월 방어 +${r.delta} ✨]`
+                 : r.outcome === "strong"  ? `[방어 +${r.delta}]`
+                 : r.outcome === "weak"    ? `[약한 방어 +${r.delta}]`
                  : `[동조 ${r.delta}]`;
-  addLine(tagLabel, "grade-tag");
+  addLine(tagLabel, "grade-tag" + (excellent ? " grade-tag--excellent" : ""));
+  if (excellent) excellentBurst();
   if (r.cardWon) addLine(`🃏 ${r.cardWon} 획득`, "grade-tag");
   revPortrait(rev.speaker, r.mood);   // 판정 mood로 표정 전환
   renderRevGauge();
@@ -767,12 +770,26 @@ function showEndGate(win = state?.status === "WIN", onGo = endGame) {
 }
 
 // 판정 결과(대사+출처+등급) 렌더
+// ── 탁월(최고 등급) 특수 연출 ── "AI가 진짜 반응했다"는 와우 모먼트: 금빛 번쩍 + "✨ 탁월 ✨" 팝.
+// 탁월은 GPT/Claude가 여러 축을 꿰뚫는 뛰어난 논거에만 주는 희소 등급 → 뜨면 크게 보상.
+function excellentBurst(label = "탁월") {
+  const sc = $("scr-chat");
+  const fx = document.createElement("div");
+  fx.className = "excellent-fx";
+  fx.innerHTML = `<span class="ex-flash"></span><span class="ex-word">✨ ${label} ✨</span>`;
+  sc.appendChild(fx);
+  sc.classList.add("ex-shake");
+  setTimeout(() => { fx.remove(); sc.classList.remove("ex-shake"); }, 1300);
+}
+
 function renderVerdict(v) {
   addLine(v.line, "npc");
   addSources(v.sources);
   const tag = { 탁월: "+50", 정합: "+35", 부분: "+15", 불합치: "0", 역효과: "-20" }[v.grade];
   const p = v.provider && v.provider !== "offline" ? " · " + v.provider : "";
-  addLine(`[${v.grade} ${tag}${p}]`, "grade-tag");
+  const excellent = v.grade === "탁월";
+  addLine(`[${excellent ? "✨ 탁월 ✨" : v.grade} ${tag}${p}]`, "grade-tag" + (excellent ? " grade-tag--excellent" : ""));
+  if (excellent) excellentBurst();
 }
 
 // 사료 힌트 카드

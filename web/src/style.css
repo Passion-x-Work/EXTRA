@@ -180,6 +180,37 @@ button, select, input { font-family: inherit; }
 .msg.me { background: #26364f; color: #f2ede1; align-self: flex-end; border-bottom-right-radius: 3px; }
 .sources { font-size: .69rem; color: var(--muted); align-self: flex-start; padding-left: 4px; }
 .grade-tag { font-size: .72rem; font-weight: 800; letter-spacing: 1px; color: var(--accent); align-self: center; text-shadow: 0 1px 3px rgba(0,0,0,.35); }
+/* 탁월 등급 태그: 금빛 강조 */
+.grade-tag--excellent { color: #d99a1c; font-size: .92rem; text-shadow: 0 0 12px rgba(255,205,90,.85), 0 1px 3px rgba(0,0,0,.35); }
+
+/* 탁월 특수 연출: 금빛 플래시 + "✨탁월✨" 팝 + 살짝 흔들림 */
+#scr-chat > .excellent-fx {
+  position: absolute; inset: 0; z-index: 40; pointer-events: none;
+  display: flex; align-items: center; justify-content: center;
+}
+#scr-chat > .excellent-fx .ex-flash {
+  position: absolute; inset: 0;
+  background: radial-gradient(circle at 50% 45%, rgba(255,214,120,.55), rgba(255,198,80,.16) 45%, transparent 70%);
+  animation: exFlash .9s ease-out forwards;
+}
+#scr-chat > .excellent-fx .ex-word {
+  position: relative; font-family: var(--serif); font-weight: 800; font-size: 2.7rem; color: #fff5d6;
+  text-shadow: 0 2px 0 #c8901f, 0 0 26px rgba(255,205,90,.95);
+  animation: exPop 1.15s cubic-bezier(.2,1.5,.4,1) forwards;
+}
+@keyframes exFlash { 0% { opacity: 0; } 18% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes exPop {
+  0% { transform: scale(.3) rotate(-8deg); opacity: 0; }
+  25% { transform: scale(1.18) rotate(-2deg); opacity: 1; }
+  70% { transform: scale(1) rotate(0); opacity: 1; }
+  100% { transform: scale(1.06); opacity: 0; }
+}
+#scr-chat.ex-shake { animation: exShake .5s ease-in-out; }
+@keyframes exShake { 0%,100% { transform: translateY(0); } 25% { transform: translateY(-4px); } 50% { transform: translateY(3px); } 75% { transform: translateY(-2px); } }
+@media (prefers-reduced-motion: reduce) {
+  #scr-chat.ex-shake { animation: none; }
+  #scr-chat > .excellent-fx .ex-word { animation: exFlash .9s ease-out forwards; }
+}
 .msg { transition: opacity .3s ease; }
 .msg.faded { opacity: .55; }                 /* 지난 대화 */
 .msg.latest { font-weight: 700; }            /* 최신 대화 강조 */
