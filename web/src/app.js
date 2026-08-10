@@ -1394,6 +1394,32 @@ document.querySelectorAll(".relic[data-char]").forEach((b) =>
 $("scr-map").addEventListener("click", (e) => {
   if (isTouch && !e.target.closest(".pin")) document.querySelectorAll(".pin--peek").forEach((p) => p.classList.remove("pin--peek"));
 });
+
+// ── 지도 좌우 팬: 기본은 오른쪽 끝(대한민국이 잘 보이게), 드래그/스와이프로 미국 대륙까지 탐색 ──
+const wmScroll = document.querySelector(".wm-scroll");
+if (wmScroll) {
+  const parkRight = () => { wmScroll.scrollLeft = wmScroll.scrollWidth; }; // 오른쪽 끝 = 한국·일본
+  requestAnimationFrame(parkRight);                      // 초기 진입
+  window.addEventListener("load", parkRight, { once: true }); // 지도 이미지 로드 후 확정
+  // 데스크톱 마우스 드래그 팬(터치는 네이티브 스크롤)
+  let panning = false, panX = 0, panL = 0, moved = 0;
+  wmScroll.addEventListener("pointerdown", (e) => {
+    if (e.pointerType !== "mouse") return;
+    panning = true; panX = e.clientX; panL = wmScroll.scrollLeft; moved = 0;
+    wmScroll.classList.add("grabbing");
+  });
+  wmScroll.addEventListener("pointermove", (e) => {
+    if (!panning) return;
+    const dx = e.clientX - panX;
+    moved = Math.max(moved, Math.abs(dx));
+    wmScroll.scrollLeft = panL - dx;
+  });
+  const endPan = () => { panning = false; wmScroll.classList.remove("grabbing"); };
+  wmScroll.addEventListener("pointerup", endPan);
+  wmScroll.addEventListener("pointerleave", endPan);
+  // 드래그였다면 핀 클릭 무시(팬과 클릭 충돌 방지)
+  wmScroll.addEventListener("click", (e) => { if (moved > 6) { e.stopPropagation(); e.preventDefault(); } }, true);
+}
 // 폼 제출: 역모드 진행 중이면 역판정, 아니면 정방향
 $("turn-form").addEventListener("submit", (e) => { (rev && !rev.done) ? onReverseTurn(e) : onTurn(e); });
 $("hint-btn").addEventListener("click", () => unlockHint()); // 수동 힌트(예산 차감)

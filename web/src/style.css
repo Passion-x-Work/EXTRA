@@ -61,9 +61,19 @@ button, select, input { font-family: inherit; }
 /* ── 고지도 판 ─────────────────────────────────────────────
    .wm-paper = 오리지널 SVG 세계지도(등장방형도법).
    핀은 --x/--y(위경도 환산 퍼센트)로 배치되므로 지도가 늘어나도 위치가 어긋나지 않는다. */
-.worldmap {
+/* 좌우 팬 뷰포트: 지도를 키워서(130%) 스크롤로 전체 탐색. 기본 위치는 오른쪽(한국) — JS에서 세팅 */
+.wm-scroll {
   position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%);
-  width: 100%; aspect-ratio: 1000 / 383.3; z-index: 1;
+  overflow-x: auto; overflow-y: hidden; z-index: 1;
+  scrollbar-width: none; /* 지도 위 스크롤바 숨김(드래그/스와이프로 팬) */
+  -webkit-overflow-scrolling: touch;
+  cursor: grab;
+}
+.wm-scroll::-webkit-scrollbar { display: none; }
+.wm-scroll.grabbing { cursor: grabbing; }
+.worldmap {
+  position: relative;
+  width: 130%; min-width: 900px; aspect-ratio: 1000 / 383.3;
 }
 .wm-paper { display: block; width: 100%; height: 100%; opacity: .92; }
 .wm-pins { position: absolute; inset: 0; }
@@ -83,23 +93,29 @@ button, select, input { font-family: inherit; }
   width: 0; height: 0; padding: 0; margin: 0; border: none; background: none;
   cursor: pointer; z-index: 2;
 }
-/* 핀 머리 — 실제 좌표 지점. 평소엔 빨간 점만 깜빡이며 시선을 끈다 */
+/* 핀 머리 — 실제 좌표 지점. "나를 눌러줘" 수준으로 크고 진하게 고동친다 */
 .pin-dot {
-  position: absolute; left: 0; top: 0; width: 12px; height: 12px; margin: -6px 0 0 -6px;
-  border-radius: 50%; background: var(--seal);
-  box-shadow: 0 0 0 3px rgba(168,50,42,.22), 0 1px 3px rgba(0,0,0,.4);
+  position: absolute; left: 0; top: 0; width: 18px; height: 18px; margin: -9px 0 0 -9px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #ff5a4e, #c81e12 70%);
+  box-shadow: 0 0 0 4px rgba(200,30,18,.35), 0 0 14px 4px rgba(255,60,40,.55), 0 1px 3px rgba(0,0,0,.5);
   transition: transform .14s cubic-bezier(.3,1.4,.5,1), background .14s, box-shadow .18s;
-  animation: pinBlink 1.6s ease-in-out infinite;
+  animation: pinBeat 1.3s ease-in-out infinite;
 }
-.pin-dot::after { /* 퍼지는 신호 */
-  content: ""; position: absolute; inset: -4px; border-radius: 50%;
-  border: 1.5px solid var(--seal); opacity: .55; animation: pinPulse 2.4s ease-out infinite;
+.pin-dot::before { /* 파동 1 */
+  content: ""; position: absolute; inset: -5px; border-radius: 50%;
+  border: 2.5px solid #e2382a; animation: pinPulse 2s ease-out infinite;
 }
-@keyframes pinPulse { 0% { transform: scale(.6); opacity: .6; } 70%,100% { transform: scale(1.9); opacity: 0; } }
-@keyframes pinBlink { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
-/* 호버/포커스 중엔 깜빡임 멈추고 또렷하게 */
-.pin:hover .pin-dot, .pin:focus-visible .pin-dot, .pin.pin--peek .pin-dot { animation: none; opacity: 1; }
-@media (prefers-reduced-motion: reduce) { .pin-dot, .pin-dot::after { animation: none; } }
+.pin-dot::after { /* 파동 2 (반 박자 늦게 — 겹파동) */
+  content: ""; position: absolute; inset: -5px; border-radius: 50%;
+  border: 2px solid #ff6a55; animation: pinPulse 2s ease-out infinite 1s;
+}
+@keyframes pinPulse { 0% { transform: scale(.5); opacity: .9; } 75%,100% { transform: scale(3.2); opacity: 0; } }
+@keyframes pinBeat { 0%, 100% { transform: scale(1); } 45% { transform: scale(1.28); } 60% { transform: scale(1.12); } }
+/* 호버/포커스 중엔 고동 멈추고 금색으로 또렷하게 */
+.pin:hover .pin-dot, .pin:focus-visible .pin-dot, .pin.pin--peek .pin-dot { animation: none; }
+.pin-dot { will-change: transform; }
+@media (prefers-reduced-motion: reduce) { .pin-dot, .pin-dot::before, .pin-dot::after { animation: none; } }
 
 /* 라벨 카드 — 평소엔 숨고, 핀에 마우스를 올리면(또는 키보드 포커스) 펼쳐진다 */
 .pin-card {

@@ -18,7 +18,9 @@
           <span class="brand-seal">端<br />役</span>
         </div>
         <p class="tagline">역사에 끼어든 <b>단역</b>이 되어, 실존 인물을 설득하라</p>
-        <!-- 고지도: 핀 좌표는 실제 위경도를 등장방형도법으로 환산한 값(--x/--y) -->
+        <!-- 고지도: 핀 좌표는 실제 위경도를 등장방형도법으로 환산한 값(--x/--y)
+             wm-scroll = 좌우 스크롤 뷰포트(드래그/스와이프 팬). 기본은 오른쪽 끝(한국이 잘 보이게) -->
+        <div class="wm-scroll">
         <div class="worldmap">
           <img class="wm-paper" src="/Assets/world-map.svg" alt="세계 고지도" />
           <div class="wm-pins">
@@ -51,6 +53,7 @@
             </button>
           </div>
         </div>
+        </div><!-- /wm-scroll -->
         <div class="map-foot">
           <div class="diff-select" id="diff-select">
             <span class="diff-label">난이도</span>
