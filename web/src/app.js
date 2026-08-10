@@ -808,7 +808,7 @@ function renderDogam() {
   const philTotal = revChars.reduce((n, cid) => n + (chars[cid].cards.arguments?.length || 0), 0);
   let html = `<div class="dogam-summary"><span class="ds-chip">📜 사료 ${saryoCount}장</span><span class="ds-chip">🃏 철학 ${philOwned}/${philTotal}</span></div>`;
 
-  // 정방향: 사료 카드 — 앞면=인물 이미지(획득 말투), 누르면 뒤집혀 내용. 밈/정통 배지로 구분.
+  // 정방향: 사료 카드 — 작은 썸네일(앞면=인물 이미지, 획득 말투). 누르면 중앙 패널에서 크게 열려 뒤집힘.
   if (fwd.length) {
     const toneKo = { meme: "밈", classic: "정통" };
     html += `<div class="dogam-section">📜 사료 카드</div>`;
@@ -819,20 +819,12 @@ function renderDogam() {
         if (!f) return "";
         const series = entry.tone === "meme" ? a.meme : a.classic;
         const img = series ? `/Assets/${a.dir}/${series}-Phase03.webp` : "";
-        const src = (f.source || "").split("/")[0].slice(0, 46);
-        return `<button type="button" class="saryo-card tone-${entry.tone}"><div class="sc-inner">` +
-          `<div class="sc-front">` +
-            `<span class="sc-noimg">${ch.profile.displayName}</span>` +
-            (img ? `<img class="sc-img" src="${img}" alt="" />` : "") +
-            `<span class="sc-tone-badge">${toneKo[entry.tone] || "정통"}</span>` +
-            `<span class="sc-front-foot">${f.topic}<small>눌러서 뒤집기 ↻</small></span>` +
-          `</div>` +
-          `<div class="sc-back">` +
-            `<div class="sc-topic-b">${f.topic}</div>` +
-            `<div class="sc-content">${f.content}</div>` +
-            `<div class="sc-src">${src}</div>` +
-          `</div>` +
-        `</div></button>`;
+        return `<button type="button" class="saryo-thumb tone-${entry.tone}" data-cid="${cid}" data-frag="${entry.id}" data-tone="${entry.tone}">` +
+          `<span class="st-noimg">${ch.profile.displayName}</span>` +
+          (img ? `<img class="st-img" src="${img}" alt="" />` : "") +
+          `<span class="st-badge">${toneKo[entry.tone] || "정통"}</span>` +
+          `<span class="st-topic">${f.topic}</span>` +
+        `</button>`;
       }).join("");
       return `<div class="dogam-group"><h3>${ch.profile.displayName} · ${cs.length}장</h3><div class="saryo-grid">${rows}</div></div>`;
     }).join("");
@@ -883,9 +875,46 @@ function renderDogam() {
   }).join("");
 
   el.innerHTML = html;
-  // 사료 카드: 이미지 404 시 숨겨 인물명 폴백 노출 + 클릭하면 뒤집기
-  el.querySelectorAll(".saryo-card .sc-img").forEach((img) => { img.onerror = () => { img.onerror = null; img.style.display = "none"; }; });
-  el.querySelectorAll(".saryo-card").forEach((btn) => btn.addEventListener("click", () => btn.classList.toggle("flipped")));
+  // 사료 썸네일: 이미지 404 폴백 + 클릭하면 중앙 패널로 크게 열기
+  el.querySelectorAll(".saryo-thumb .st-img").forEach((img) => { img.onerror = () => { img.onerror = null; img.style.display = "none"; }; });
+  el.querySelectorAll(".saryo-thumb").forEach((btn) =>
+    btn.addEventListener("click", () => openSaryoCard(btn.dataset.cid, btn.dataset.frag, btn.dataset.tone)));
+}
+
+// 사료 카드 확대 패널: 중앙에 크게 열리고, 카드를 누르면 뒤집혀 원문·출처가 보인다.
+function openSaryoCard(cid, fragId, tone) {
+  const ch = chars[cid]; if (!ch) return;
+  const f = ch.knowledge.fragments.find((x) => x.id === fragId); if (!f) return;
+  const a = ASSETS[cid] || {};
+  const series = tone === "meme" ? a.meme : a.classic;
+  const img = series ? `/Assets/${a.dir}/${series}-Phase03.webp` : "";
+  const src = (f.source || "").split("/")[0].slice(0, 80);
+  const toneKo = tone === "meme" ? "밈" : "정통";
+  const ov = document.createElement("div");
+  ov.className = "saryo-modal";
+  ov.innerHTML =
+    `<button type="button" class="saryo-modal-close" aria-label="닫기">✕</button>` +
+    `<button type="button" class="saryo-card big tone-${tone}"><div class="sc-inner">` +
+      `<div class="sc-front">` +
+        `<span class="sc-noimg">${ch.profile.displayName}</span>` +
+        (img ? `<img class="sc-img" src="${img}" alt="" />` : "") +
+        `<span class="sc-tone-badge">${toneKo}</span>` +
+        `<span class="sc-front-foot">${f.topic}<small>눌러서 뒤집기 ↻</small></span>` +
+      `</div>` +
+      `<div class="sc-back">` +
+        `<div class="sc-topic-b">${f.topic}</div>` +
+        `<div class="sc-content">${f.content}</div>` +
+        `<div class="sc-src">${src}</div>` +
+      `</div>` +
+    `</div></button>`;
+  $("app").appendChild(ov);
+  const card = ov.querySelector(".saryo-card");
+  const imgEl = card.querySelector(".sc-img");
+  if (imgEl) imgEl.onerror = () => { imgEl.onerror = null; imgEl.style.display = "none"; };
+  card.addEventListener("click", () => card.classList.toggle("flipped"));
+  const close = () => ov.remove();
+  ov.querySelector(".saryo-modal-close").addEventListener("click", close);
+  ov.addEventListener("click", (e) => { if (e.target === ov) close(); }); // 바깥(백드롭) 클릭 = 닫기
 }
 
 // 시작 시 판정 프록시 health 체크 → 서버가 없거나 키가 없으면 드롭다운을 자동 조정
