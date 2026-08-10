@@ -107,6 +107,20 @@
         </div>
       </section>
 
+      <!-- 덱 편성 (역모드 진입 전, 카드 보유 시) -->
+      <section id="scr-deck" class="screen">
+        <header class="dogam-head">
+          <h2>덱 편성</h2>
+          <button id="deck-close" class="ctl">← 지도</button>
+        </header>
+        <p class="deck-hint">덱에 넣은 철학 카드만 게임 중 <b>🃏 꺼내 쓰기</b>로 재사용할 수 있어요.<br />적게 쓸수록 높은 등급 · 최대 <b id="deck-max">3</b>장</p>
+        <div id="deck-grid" class="phil-grid deck-grid"></div>
+        <div class="deck-foot">
+          <span id="deck-count" class="deck-count">덱 0/3</span>
+          <button id="deck-go" class="retry">출전 ▶</button>
+        </div>
+      </section>
+
       <!-- 사료 도감 -->
       <section id="scr-dogam" class="screen">
         <header class="dogam-head">

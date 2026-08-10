@@ -421,6 +421,18 @@ button, select, input { font-family: inherit; }
 .card-use-chip.card-silver { border-color: #8b96a3; }
 .card-use-chip.card-bronze { border-color: #b3855a; }
 
+/* 덱 편성 화면 */
+#scr-deck { gap: 12px; }
+.deck-hint { color: var(--ink-soft); font-size: .85rem; line-height: 1.6; text-align: center; }
+.deck-hint b { color: var(--seal); }
+.deck-grid { flex: 1; overflow-y: auto; align-content: start; padding-top: 4px; }
+.deck-slot { cursor: pointer; text-align: left; transition: transform .12s, box-shadow .2s; }
+.deck-slot:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(90,60,20,.2); }
+.deck-slot.selected { outline: 3px solid var(--seal); outline-offset: 1px; background: #fff3d8; }
+.deck-slot.selected::after { content: "✓ 덱"; position: absolute; bottom: 8px; right: 10px; font-size: .7rem; font-weight: 800; color: var(--seal); }
+.deck-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 4px; }
+.deck-count { font-weight: 800; color: var(--gold); }
+
 /* 결과화면: 철학 카드 + 내 반박 */
 .rev-won { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 3px; margin-top: 6px; }
 .rev-won-input { font-size: .72rem; color: #6a6151; font-style: italic; }

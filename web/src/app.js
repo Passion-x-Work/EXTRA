@@ -27,6 +27,8 @@ const PARROT_ROLLBACK = 2;   // 사료 베끼기 감지 시 되돌릴 턴 수
 let rev = null;              // { cards, scenario, index, gauge, goal, done, log }
 const REV_START_DEFAULT = 20, REV_GOAL_DEFAULT = 80; // winCondition 없을 때 폴백
 const isReverseChar = (id) => !!chars[id]?.cards;    // cards.json 있으면 역설득 인물
+let deckSel = new Set(), deckCharId = null;          // 덱 편성 선택 상태
+const DECK_MAX = 3;                                  // 덱 최대 장수(적게 쓸수록 고등급)
 
 // ── 역모드 기록: 반박 세션 로그 + 철학 카드 컬렉션(localStorage) ──
 // REV_LOG: 최신 1판의 공방 전체(스펙 작업1 — 1차는 최신 1판만 유지).
@@ -292,13 +294,13 @@ function renderRevGauge() {
   $("turn-count").textContent = `논거 ${Math.min(rev.index + 1, rev.cards.arguments.length)}/${rev.cards.arguments.length}`;
 }
 
-function startReverse(id) {
+function startReverse(id, deck = null) {
   charId = id;
   const wc = chars[id].cards.winCondition || {};
   rev = { cards: chars[id].cards, scenario: chars[id].scenario, index: 0,
         gauge: wc.startGauge ?? REV_START_DEFAULT, goal: wc.goalGauge ?? REV_GOAL_DEFAULT,
         maxRebuttals: wc.maxRebuttals ?? 2, attempt: 0, speaker: null, done: false,
-        log: [], cardsWon: [], usingCard: false, usedCards: 0 };
+        log: [], cardsWon: [], usingCard: false, usedCards: 0, deck };
   state = null; snaps = [];
   $("log").innerHTML = "";
   $("scr-chat").dataset.theme = id;
@@ -365,6 +367,7 @@ const revSpeakerCls = (speaker) => REV_SPEAKER_ID[speaker] === "kuroda" ? "npc--
 function offerCard(argId) {
   const saved = loadRevDogam()[charId]?.[argId];
   if (!saved || !saved.myInput) return;
+  if (rev.deck && !rev.deck.has(argId)) return; // 덱 편성됨 → 덱에 넣은 카드만 꺼낼 수 있음
   const chip = document.createElement("button");
   chip.type = "button";
   chip.className = `card-use-chip card-${saved.grade || "silver"}`;
@@ -707,6 +710,36 @@ function burstConfetti() {
     if (++frame < 130) requestAnimationFrame(tick);
     else cv.remove();
   })();
+}
+
+// ── 덱 편성 (역모드 진입 전, 모은 카드 중 이번 판에 꺼내 쓸 카드 선택) ──
+function openDeck(id) {
+  deckCharId = id; deckSel = new Set();
+  renderDeck(id);
+  show("scr-deck");
+}
+function renderDeck(id) {
+  const data = chars[id].cards;
+  const earned = loadRevDogam()[id] || {};
+  $("deck-max").textContent = DECK_MAX;
+  $("deck-grid").innerHTML = data.arguments.map((a) => {
+    const c = earned[a.id];
+    if (!c) return `<div class="phil-slot locked"><div class="ps-name">🔒 ？？？</div><div class="ps-phil">미획득</div></div>`;
+    return `<button type="button" class="phil-slot deck-slot card-${c.grade}" data-arg="${a.id}">` +
+      `<div class="ps-grade">${GRADE_KO[c.grade]}</div>` +
+      `<div class="ps-name">${c.card}</div>` +
+      `<div class="ps-mine">“${c.myInput.slice(0, 38)}${c.myInput.length > 38 ? "…" : ""}”</div>` +
+      `</button>`;
+  }).join("");
+  $("deck-grid").querySelectorAll(".deck-slot").forEach((b) =>
+    b.addEventListener("click", () => {
+      const arg = b.dataset.arg;
+      if (deckSel.has(arg)) { deckSel.delete(arg); b.classList.remove("selected"); }
+      else if (deckSel.size < DECK_MAX) { deckSel.add(arg); b.classList.add("selected"); }
+      $("deck-count").textContent = `덱 ${deckSel.size}/${DECK_MAX}`;
+    })
+  );
+  $("deck-count").textContent = `덱 0/${DECK_MAX}`;
 }
 
 // ── 사료 도감 렌더 (정방향 사료 카드 + 역모드 철학 카드 통합) ──
@@ -1156,8 +1189,11 @@ async function saveCard() {
 document.querySelectorAll(".relic[data-char]").forEach((b) =>
   b.addEventListener("click", () => {
     const id = b.dataset.char;
-    if (isReverseChar(id)) startReverse(id);
-    else startGame(id, !!loadSaves()[id]);
+    if (isReverseChar(id)) {
+      // 모은 카드가 있으면 덱 편성 화면 → '출전' 후 시작. 없으면 바로 시작.
+      if (Object.keys(loadRevDogam()[id] || {}).length) openDeck(id);
+      else startReverse(id);
+    } else startGame(id, !!loadSaves()[id]);
   })
 );
 // 폼 제출: 역모드 진행 중이면 역판정, 아니면 정방향
@@ -1181,6 +1217,9 @@ document.querySelectorAll("#diff-select .diff").forEach((b) =>
 // 사료 도감
 $("open-dogam").addEventListener("click", () => { renderDogam(); show("scr-dogam"); });
 $("close-dogam").addEventListener("click", () => { refreshMapSaves(); show("scr-map"); });
+// 덱 편성: 출전(선택 카드로 시작) · 닫기(지도로)
+$("deck-go").addEventListener("click", () => startReverse(deckCharId, new Set(deckSel)));
+$("deck-close").addEventListener("click", () => show("scr-map"));
 // 탭을 닫거나 새로고침해도 진행 보존
 window.addEventListener("pagehide", saveGame);
 window.addEventListener("beforeunload", saveGame);
