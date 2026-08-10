@@ -393,18 +393,23 @@ button, select, input { font-family: inherit; }
 /* 모바일(<760px): 3단 배치 — 위=대화(말풍선), 가운데=인물 이미지, 맨 아래=입력창.
    대화는 상단에서 스크롤, 인물은 세로 중앙에 노출, 입력창은 바닥 고정. */
 @media (max-width: 759px) {
-  /* 인물: 화면 세로 중앙 밴드(대화와 입력 사이) */
+  /* B안(배경형): 인물이 화면을 꽉 채우고(뒤), 대화는 하단에 반투명 겹침, 입력창 하단 고정 */
   #char-panel {
-    position: absolute; left: 0; right: 0; top: 40vh; height: 42vh;
-    justify-content: center; align-items: flex-end;
-    z-index: 0; opacity: 1;
+    position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; opacity: 1; overflow: hidden;
+    align-items: flex-start; justify-content: center;
   }
-  #char-portrait { width: 64%; max-height: 100%; object-position: center bottom; }
-  .chat-main { width: 100%; height: 100%; }
-  /* 상단: 대화 로그(고정 높이 안에서 스크롤) → 인물 위로 넘치지 않음 */
-  #log { flex: 0 1 auto; max-height: 26vh; }
-  /* 입력창을 맨 아래로 밀어 인물 밴드와 겹치지 않게 */
-  #turn-form { margin-top: auto; }
+  #char-portrait {
+    width: 100%; height: 100%; max-width: none; max-height: none;
+    object-fit: cover; object-position: top center; /* 화면 꽉 채우기(빈 공간 X) */
+  }
+  /* 대화 UI는 인물 위 투명 오버레이 — 인물이 뒤로 비쳐 보임 */
+  .chat-main { width: 100%; height: 100%; z-index: 1; }
+  #log { flex: 1 1 auto; min-height: 0; justify-content: flex-end; } /* 아래부터 쌓임 */
+  #log .msg.npc { background: rgba(253,246,230,.95); backdrop-filter: blur(2px); }
+  #log .msg.me { backdrop-filter: blur(3px); }
+  /* 헤더=상단 그라디언트 오버레이 / 입력창=하단 반불투명 바 */
+  .chat-head { background: linear-gradient(180deg, rgba(28,22,12,.42), rgba(28,22,12,0)); }
+  #turn-form { background: rgba(236,226,201,.94); border-radius: 12px 12px 0 0; }
 }
 
 /* ══════════ 데스크톱: 중앙 문서 프레임 ══════════ */
