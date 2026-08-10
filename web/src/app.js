@@ -354,6 +354,7 @@ function playIntro(lines, onDone) {
 const REV_SPEAKER_ID = { "하루": "haru", "쿠로다": "kuroda" };
 function revPortrait(speaker, mood = "neutral") {
   const sid = REV_SPEAKER_ID[speaker] || "haru";
+  if (rev) rev.mood = mood; // 현재 표정 저장(톤 토글 시 같은 표정으로 재로드)
   fadePortrait($("char-portrait"), `/Assets/Reverse/${sid}-${tone}-${mood}.webp`);
 }
 // 화자별 말풍선 클래스(S4 캐릭터 대비: 하루=따뜻/열정, 쿠로다=차가움/데이터)
@@ -1142,7 +1143,8 @@ $("back-map").addEventListener("click", () => { if (!rev) saveGame(); rev = null
 $("tone-toggle").addEventListener("click", () => {
   tone = tone === "classic" ? "meme" : "classic";
   syncToneUI();
-  if (state) { retone(); updateScene(); } // 로그 리렌더 + 캐릭터 시리즈 교체(정통↔밈)
+  if (rev && !rev.done) revPortrait(rev.speaker, rev.mood || "neutral"); // 역모드: 하루/쿠로다 초상 정통↔밈 교체
+  else if (state) { retone(); updateScene(); } // 정방향: 로그 리렌더 + 캐릭터 시리즈 교체
 });
 // 난이도 선택
 document.querySelectorAll("#diff-select .diff").forEach((b) =>
