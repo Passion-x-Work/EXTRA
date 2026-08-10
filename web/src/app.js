@@ -49,6 +49,16 @@ const GRADE_RANK = { bronze: 1, silver: 2, gold: 3 };
 const GRADE_KO = { bronze: "브론즈", silver: "실버", gold: "골드" };
 const cardGrade = (verdictGrade) => verdictGrade === "탁월" ? "gold" : verdictGrade === "정합" ? "silver" : "bronze";
 
+// 두 문장의 유사도(0~1) — 글자 2-gram Jaccard. 공백·문장부호 무시. 짧은 한글 반박 비교용.
+function simRatio(a, b) {
+  const norm = (s) => (s || "").toLowerCase().replace(/[\s.,!?~…"'“”·]/g, "");
+  const grams = (s) => { const g = new Set(); if (s.length < 2) { if (s) g.add(s); return g; } for (let i = 0; i < s.length - 1; i++) g.add(s.slice(i, i + 2)); return g; };
+  const A = grams(norm(a)), B = grams(norm(b));
+  if (!A.size || !B.size) return norm(a) === norm(b) ? 1 : 0;
+  let inter = 0; A.forEach((x) => { if (B.has(x)) inter++; });
+  return inter / (A.size + B.size - inter);
+}
+
 // 철학 카드 획득/성장 기록(인물별·논거별). 더 높은 등급 반박으로만 갱신(best-rebuttal).
 // 반환: { status: "new"|"upgrade"|"keep", grade, from? } → 획득/승급 연출용
 function addRevCard(argId, card, philosophy, myInput, speaker, grade = "silver") {
@@ -1157,8 +1167,12 @@ function buildRevShareCard() {
     g.fillText("획득한 철학 카드가 없다", W / 2, y); y += 92;
   }
 
-  // 대표 반박: 가장 높은 등급의 방어(동점이면 먼저 지켜낸 말). sort는 안정 정렬이라 동급은 원래 순서 유지.
-  const bestWon = rev.cardsWon.slice().sort((a, b) => (GRADE_RANK[b.grade] || 0) - (GRADE_RANK[a.grade] || 0))[0];
+  // 대표 반박: 등급 높은 순(동점=먼저 지켜낸 말, 안정 정렬). 단 다른 반박과 너무 비슷한(겹치는) 말은
+  // 뒤로 미뤄, 구별되는 말을 대표로. 모두 비슷하면(뺄 게 없으면) 그냥 최고 등급 유지.
+  const won = rev.cardsWon.slice().sort((a, b) => (GRADE_RANK[b.grade] || 0) - (GRADE_RANK[a.grade] || 0));
+  const isDup = (c) => won.some((o) => o !== c && simRatio(c.myInput, o.myInput) >= 0.5);
+  const distinct = won.filter((c) => !isDup(c));
+  const bestWon = distinct[0] || won[0];
   const rep = bestWon?.myInput || rev.log.find((l) => l.outcome === "strong")?.myInput;
   if (rep) {
     g.fillStyle = "#4a4132"; g.font = "italic 32px 'Nanum Myeongjo', serif";
