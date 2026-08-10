@@ -742,6 +742,29 @@ button, select, input { font-family: inherit; }
   .relic:not(.pin) { width: 262px; max-width: 262px; min-height: 128px; justify-content: center; }
   .relic-name { font-size: 1.28rem; }
   .msg { font-size: 1rem; max-width: 74%; }
+
+  /* 결과 카드(승리): 3열 배치 — 좌=역사 사료 · 중앙=영상+제목 · 우=내 논거·턴·등급.
+     보상 카드는 하단 전체 폭. 모바일은 기존 세로 스택 유지 */
+  #result-card {
+    max-width: 860px;
+    display: grid; align-items: center; column-gap: 26px;
+    grid-template-columns: 1fr minmax(230px, 300px) 1fr;
+    grid-template-areas:
+      "cta   clip  side"
+      "cta   title side"
+      "cards cards cards";
+  }
+  #result-card .victory-clip { grid-area: clip; width: 100%; margin: 0 auto 10px; }
+  #result-card .card-title { grid-area: title; margin: 0 0 6px; align-self: start; }
+  #result-card .card-cta {
+    grid-area: cta; align-self: center; text-align: left;
+    border-top: none; border-right: 1px dashed var(--line); padding: 8px 18px 8px 0;
+  }
+  #result-card .result-side { grid-area: side; align-self: center; }
+  #result-card .card-line { margin-bottom: 12px; }
+  #result-card .result-cards { grid-area: cards; margin-top: 16px; border-top: 1px dashed var(--line); padding-top: 14px; }
+  /* 영상 없이 이길 때(클립 hidden)나 패배 시엔 중앙 열이 비므로 제목이 위로 붙음 */
+  #result-card .victory-clip[hidden] { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

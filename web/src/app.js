@@ -430,8 +430,10 @@ function offerCard(argId) {
 }
 
 // 대화 중 도감에서 카드 '쓰기' → 입력창에 채우고 대화로 복귀
+let pendingCardInput = false; // 이번 입력이 카드에서 꺼낸 것인지(결과 카드 대표 논거 선정에서 후순위 처리)
 function useSaryoCard(content) { // 정방향: 사료 사실을 논거로
   dogamFrom = null; show("scr-chat");
+  pendingCardInput = true;
   const inp = $("turn-input"); inp.value = content; inp.focus();
 }
 function useRebuttalCard(myInput) { // 역방향: 저장한 반박 꺼내 쓰기(감쇠 적용)
@@ -631,13 +633,30 @@ function revShowResult(win) {
 // 패배 놀림 대사 픽(배열에서 seed로 결정론적 선택)
 const pickTaunt = (arr, seed = 0) => (arr && arr.length) ? arr[Math.abs(seed) % arr.length] : null;
 
+// 결과 카드 대표 논거: 이번 판에서 '가장 높은 등급을 받은 나의 말'.
+// 단, 그 말이 도감 카드에서 꺼내 쓴 것(fromCard)이면 — 내 순수 논거 중
+// 다음(또는 동점) 높은 것을 우선한다. 순수 논거가 하나도 없으면 최고점 그대로.
+function bestArgument() {
+  const turns = (state.turnLog || []).filter((e) => e.type === "turn" && e.input);
+  if (!turns.length) return firstInputSaved;
+  const pts = (e) => cfg.grade_to_points[e.verdict?.grade] ?? -99;
+  const sorted = [...turns].sort((a, b) => pts(b) - pts(a)); // 안정 정렬 → 동점이면 먼저 말한 것
+  const top = sorted[0];
+  if (top.fromCard) {
+    const ownBest = sorted.find((e) => !e.fromCard);
+    if (ownBest) return ownBest.input;
+  }
+  return top.input;
+}
+
 function endGame() {
   const won = state.status === "WIN";
   const scn = chars[charId].scenario;
   $("result-title").textContent = won ? "설득 성공" : "다시 도전";
   const rl = $("result-line");
   if (won) {
-    rl.textContent = firstInputSaved ? `“${firstInputSaved}”` : "";
+    const best = bestArgument();
+    rl.textContent = best ? `“${best}”` : "";
     rl.classList.remove("taunt");
   } else {
     // 패배 = 인물이 의기양양하게 놀린다(킹받는 엔딩 → 복수심 재도전)
@@ -1109,7 +1128,8 @@ async function onTurn(e) {
   if (verdict.matchedIssue && (verdict.grade === "탁월" || verdict.grade === "정합"))
     state.coveredAxes.add(verdict.matchedIssue); // 새로 커버한 가치 축
 
-  state.turnLog.push({ type: "turn", input, verdict });
+  state.turnLog.push({ type: "turn", input, verdict, fromCard: pendingCardInput });
+  pendingCardInput = false;
   renderVerdict(verdict);
   renderGauge();
   renderAxisTrack();
@@ -1287,9 +1307,10 @@ function buildShareCard() {
   g.fillStyle = gold; g.font = "800 112px 'Nanum Myeongjo', serif"; g.textBaseline = "middle";
   g.fillText(grade, W / 2, 610); g.textBaseline = "top";
 
-  if (firstInputSaved) {
+  const bestArg = bestArgument(); // 공유 카드에도 최고 등급 논거 사용(카드 재사용 제외 규칙 동일)
+  if (bestArg) {
     g.fillStyle = "#4a4132"; g.font = "italic 34px 'Nanum Myeongjo', serif";
-    wrapText(g, `“${firstInputSaved}”`, W - 260).slice(0, 3).forEach((ln, i) => g.fillText(ln, W / 2, 780 + i * 50));
+    wrapText(g, `“${bestArg}”`, W - 260).slice(0, 3).forEach((ln, i) => g.fillText(ln, W / 2, 780 + i * 50));
   }
   g.fillStyle = "#7c7059"; g.font = "500 28px 'Noto Sans KR', sans-serif";
   g.fillText(`${state.turn}턴${won ? " · " + grade + "등급" : ""}`, W / 2, 970);
