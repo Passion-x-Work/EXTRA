@@ -1396,6 +1396,15 @@ async function saveCard() {
   }, "image/png");
 }
 
+// 지도 무한 스크롤: 같은 지도를 3벌 이어붙인다(왼쪽 사본 · 원본 · 오른쪽 사본).
+// 사본도 핀을 그대로 가지므로, 아래 클릭 리스너 등록 '전에' 복제해야 사본 핀도 눌린다.
+const wmScrollEl = document.querySelector(".wm-scroll");
+const wmMain = wmScrollEl?.querySelector(".worldmap");
+if (wmScrollEl && wmMain) {
+  wmScrollEl.insertBefore(wmMain.cloneNode(true), wmMain); // 왼쪽 사본
+  wmScrollEl.appendChild(wmMain.cloneNode(true));          // 오른쪽 사본
+}
+
 // 유적 클릭: 역설득 인물(cards.json)이면 역모드, 아니면 정방향(저장 있으면 이어하기)
 // 터치 기기: 첫 탭 = 이름 카드 열기(pin--peek), 두 번째 탭 = 입장 (호버 프리뷰 대체)
 const isTouch = window.matchMedia("(hover: none)").matches;
@@ -1420,39 +1429,28 @@ $("scr-map").addEventListener("click", (e) => {
 //    기본 화면 = 한국이 정가운데. 드래그(마우스)/스와이프(터치)로 굴린다. ──
 const wmScroll = document.querySelector(".wm-scroll");
 if (wmScroll) {
-  // 지도 복제 2벌 추가(원본 포함 총 3벌: [복제A][원본][복제B])
-  const original = wmScroll.querySelector(".worldmap");
-  if (original && !wmScroll.dataset.looped) {
-    wmScroll.dataset.looped = "1";
-    const cloneA = original.cloneNode(true), cloneB = original.cloneNode(true);
-    // 복제본 핀도 클릭 되도록 위임(아래 startGame 리스너는 원본에만 붙었으므로)
-    for (const c of [cloneA, cloneB]) c.querySelectorAll(".relic[data-char]").forEach((b) => b.addEventListener("click", () => {
-      const id = b.dataset.char;
-      if (isTouch && b.classList.contains("pin") && !b.classList.contains("pin--peek")) {
-        document.querySelectorAll(".pin--peek").forEach((p) => p.classList.remove("pin--peek"));
-        b.classList.add("pin--peek");
-        return;
-      }
-      if (isReverseChar(id)) startReverse(id);
-      else startGame(id, !!loadSaves()[id]);
-    }));
-    wmScroll.insertBefore(cloneA, original);
-    wmScroll.appendChild(cloneB);
-  }
-  const mapW = () => wmScroll.scrollWidth / 3; // 한 벌 너비
-  // 한국(핀 --x 85.27%)이 뷰포트 정가운데 오도록: 가운데 벌 기준
-  const parkKorea = () => {
-    const w = mapW();
-    wmScroll.scrollLeft = w + w * 0.8527 - wmScroll.clientWidth / 2;
+  // 지도 한 벌의 폭(사본 3벌이 나란히 있으므로 scrollLeft ± W 는 항상 같은 그림)
+  const mapW = () => wmScroll.querySelector(".worldmap")?.offsetWidth || 0;
+  // 무한 반복: 끝에 가까워지면 한 벌만큼 되감는다(같은 그림이라 이음매가 안 보인다)
+  let wrapping = false;
+  const wrapLoop = () => {
+    const W = mapW(); if (!W || wrapping) return;
+    const s = wmScroll.scrollLeft;
+    if (s < W * 0.5)      { wrapping = true; wmScroll.scrollLeft = s + W; wrapping = false; }
+    else if (s > W * 1.5) { wrapping = true; wmScroll.scrollLeft = s - W; wrapping = false; }
   };
-  requestAnimationFrame(parkKorea);
-  window.addEventListener("load", parkKorea, { once: true });
-  // 무한 랩: 가장자리 벌로 넘어가면 티 안 나게 가운데 벌로 점프
-  wmScroll.addEventListener("scroll", () => {
-    const w = mapW();
-    if (wmScroll.scrollLeft < w * 0.25) wmScroll.scrollLeft += w;
-    else if (wmScroll.scrollLeft > w * 1.75) wmScroll.scrollLeft -= w;
-  }, { passive: true });
+  wmScroll.addEventListener("scroll", wrapLoop, { passive: true });
+
+  // 초기 시선: 훈민정음(세종) 핀을 화면 한가운데에 둔다.
+  const parkOnLead = () => {
+    const W = mapW(); if (!W) return;
+    const lead = wmScroll.querySelector('.pin[data-char="sejong"]');
+    const lx = lead ? (parseFloat(lead.style.getPropertyValue("--x")) / 100) * W : W * 0.85;
+    wmScroll.scrollLeft = W + lx - wmScroll.clientWidth / 2; // 가운데 사본 기준
+    wrapLoop();
+  };
+  requestAnimationFrame(parkOnLead);                      // 초기 진입
+  window.addEventListener("load", parkOnLead, { once: true }); // 지도 이미지 로드 후 확정
   // 데스크톱 마우스 드래그 팬(터치는 네이티브 스크롤)
   let panning = false, panX = 0, panL = 0, moved = 0;
   wmScroll.addEventListener("pointerdown", (e) => {
