@@ -711,10 +711,15 @@ button, select, input { font-family: inherit; }
       rgba(236,226,201,.82) 58%,
       rgba(236,226,201,.9)  100%);
   }
-  /* 로그가 인물 얼굴까지 올라와 덮지 않도록: 스크림 시작점 위로는 못 올라감 */
+  /* 로그가 인물 얼굴까지 올라와 덮지 않도록: 스크림 시작점 위로는 못 올라감.
+     max-height에서 아래 입력창+턴수(≈6.5rem)까지 빼야 로그 '윗변'이 스크림선(40%)에 맞는다.
+     (빼지 않으면 로그가 그만큼 더 위로 올라와 얼굴을 덮는다)
+     justify-content:flex-end 는 쓰지 않는다 — 위로 넘친 옛 대화가 스크롤로 닿지 않게 되는
+     플렉스 컨테이너 오버플로 문제가 생긴다. 대신 flex:0 1 auto 로 내용만큼만 차지하고
+     margin-top:auto 로 아래에 붙인다. */
   #log {
-    flex: 1 1 auto; min-height: 0; justify-content: flex-end;
-    margin-top: auto; max-height: calc(100% - var(--scrim-top));
+    flex: 0 1 auto; min-height: 0;
+    margin-top: auto; max-height: calc(100% - var(--scrim-top) - 6.5rem);
   } /* 하단 스크림 위로만 쌓임 */
   #log .msg.npc { background: rgba(253,246,230,.9); }
   #turn-form { background: rgba(236,226,201,.6); }
