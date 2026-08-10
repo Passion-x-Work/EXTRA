@@ -1201,6 +1201,8 @@ $("turn-form").addEventListener("submit", (e) => { (rev && !rev.done) ? onRevers
 $("hint-btn").addEventListener("click", () => unlockHint()); // 수동 힌트(예산 차감)
 $("save-card").addEventListener("click", saveCard);
 $("retry").addEventListener("click", () => { hideVictoryClip(); rev = null; refreshMapSaves(); show("scr-map"); });
+// 결과화면 → 도감 보기(닫으면 지도로)
+$("result-dogam").addEventListener("click", () => { hideVictoryClip(); renderDogam(); show("scr-dogam"); });
 // 뒤로가기: 진행 자동 저장 후 지도로 (역모드는 저장 없이 나감)
 $("back-map").addEventListener("click", () => { if (!rev) saveGame(); rev = null; refreshMapSaves(); show("scr-map"); });
 // 말투 슬라이딩 스위치(정통↔밈): 즉시 로그를 새 말투로 리렌더

@@ -299,7 +299,8 @@ button, select, input { font-family: inherit; }
 
 /* ══════════ 결과(낙관 문서) ══════════ */
 #scr-result {
-  justify-content: center; align-items: center; gap: 22px;
+  justify-content: safe center; align-items: center; gap: 18px;
+  overflow-y: auto; padding: 22px; /* 가로/짧은 화면에서 위·버튼 안 잘리게 스크롤 */
   background: radial-gradient(110% 80% at 50% 20%, #efe6cf, #ddcda6);
 }
 .card {
@@ -354,6 +355,30 @@ button, select, input { font-family: inherit; }
 .rc-title { width: 100%; font-size: .8rem; font-weight: 700; color: var(--gold); margin-bottom: 2px; }
 .rc-title.muted { color: #9a9078; font-weight: 500; }
 .rc-chip { font-size: .72rem; background: #fff3d8; border: 1px solid var(--line); color: var(--ink-soft); padding: 3px 9px; border-radius: 20px; }
+
+/* 가로(짧은 높이) 결과: 영상+역사노트 좌 / 제목·등급·보상 우 2단 */
+@media (orientation: landscape) and (max-height: 560px) {
+  #scr-result { padding: 14px 20px; }
+  #result-card:has(.victory-clip:not([hidden])) {
+    max-width: 620px;
+    display: grid;
+    grid-template-columns: minmax(0, 210px) 1fr;
+    grid-template-areas:
+      "clip  title"
+      "clip  line"
+      "clip  meta"
+      "note  cards";
+    column-gap: 22px; row-gap: 6px;
+    align-items: start; text-align: left;
+    padding: 22px 24px;
+  }
+  #result-card:has(.victory-clip:not([hidden])) .victory-clip { grid-area: clip; margin: 0; width: 100%; align-self: center; }
+  #result-card:has(.victory-clip:not([hidden])) #result-title { grid-area: title; margin: 0 0 2px; }
+  #result-card:has(.victory-clip:not([hidden])) #result-line { grid-area: line; margin: 0 0 6px; }
+  #result-card:has(.victory-clip:not([hidden])) .card-meta { grid-area: meta; justify-content: flex-start; margin: 0 0 6px; }
+  #result-card:has(.victory-clip:not([hidden])) .card-cta { grid-area: note; margin-top: 8px; }
+  #result-card:has(.victory-clip:not([hidden])) .result-cards { grid-area: cards; justify-content: flex-start; margin-top: 8px; }
+}
 
 /* 클리어 보상: 다음 난이도용 힌트 카드 */
 .rc-bonus {
