@@ -362,6 +362,28 @@ function playIntro(lines, onDone) {
   nextLine();
 }
 
+// 첫 획득 카드 플립 리빌: 뒤집히며 등장(획득 순간의 도파민). 논리 흐름을 막지 않고 위에 겹쳐 보여줌.
+function revCardReveal(card, grade, philosophy) {
+  const ov = document.createElement("div");
+  ov.className = "card-reveal";
+  ov.innerHTML =
+    `<div class="cr-card card-${grade}">` +
+      `<div class="cr-face cr-back">🃏</div>` +
+      `<div class="cr-face cr-front card-${grade}">` +
+        `<div class="cr-badge">NEW</div>` +
+        `<div class="cr-grade">${GRADE_KO[grade]}</div>` +
+        `<div class="cr-name">${card}</div>` +
+        `<div class="cr-phil">${(philosophy || "").split("—")[0].trim()}</div>` +
+        `<div class="cr-tag">철학 카드 획득</div>` +
+      `</div>` +
+    `</div>`;
+  $("scr-chat").appendChild(ov);
+  let done = false;
+  const close = () => { if (done) return; done = true; ov.classList.add("out"); setTimeout(() => ov.remove(), 350); };
+  const t = setTimeout(close, 1900);
+  ov.addEventListener("click", () => { clearTimeout(t); close(); });
+}
+
 // 역모드 화자 초상: Assets/Reverse/<speaker>-<tone>-<mood>.webp (파일 없으면 자동 숨김)
 const REV_SPEAKER_ID = { "하루": "haru", "쿠로다": "kuroda" };
 function revPortrait(speaker, mood = "neutral") {
@@ -499,6 +521,7 @@ async function onReverseTurn(e) {
       addLine(`⬆️ ${r.cardWon} 등급 상승! ${GRADE_KO[res.from]} → ${GRADE_KO[grade]}`, `grade-tag card-toast card-${grade}`);
     else
       addLine(`🃏 ${r.cardWon} 획득 · ${GRADE_KO[grade]}`, `grade-tag card-toast card-${grade}`);
+    if (res.status === "new") revCardReveal(r.cardWon, grade, curArg.targetPhilosophy); // 첫 획득 = 플립 리빌
   }
 
   const lastArg = rev.index + 1 >= rev.cards.arguments.length;
@@ -786,18 +809,26 @@ function renderDogam() {
 
   // 역모드: 철학 카드 — 획득한 것 먼저(등급 높은 순), 🔒 미획득은 뒤로
   html += `<div class="dogam-section">🃏 철학 카드</div>`;
+  const KIND_LABEL = { temptation: "달콤한 유혹", trap: "함정", bait: "가짜 명언" };
   html += revChars.map((cid) => {
     const data = chars[cid].cards;
     const name = data.figure?.displayName || cid;
     const args = data.arguments || [];
+    const personas = data.personas || [];
+    const speakerName = (id) => personas.find((p) => p.id === id)?.name || "동료";
     const earned = rd[cid] || {};
     const owned = Object.keys(earned).length;
+    const total = args.length;
     const gold = Object.values(earned).filter((c) => c.grade === "gold").length;
+    const pct = total ? Math.round((owned / total) * 100) : 0;
+    const mastered = owned === total && total > 0;
+    const allGold = mastered && gold === total;
     const ownedSlots = args.filter((a) => earned[a.id]).sort((x, y) => (GRADE_RANK[earned[y.id].grade] || 0) - (GRADE_RANK[earned[x.id].grade] || 0));
     const lockedSlots = args.filter((a) => !earned[a.id]);
     const slot = (a) => {
       const c = earned[a.id];
-      if (!c) return `<div class="phil-slot locked"><div class="ps-name">🔒 ？？？</div><div class="ps-phil">아직 못 지킨 철학</div></div>`;
+      // 미획득 티저: 정답(철학)은 감추되 '누가·어떤 종류'만 흘려 궁금증 유발
+      if (!c) return `<div class="phil-slot locked"><div class="ps-name">🔒 ？？？</div><div class="ps-phil">${speakerName(a.speaker)}의 ${KIND_LABEL[a.kind] || "설득"}…</div></div>`;
       return `<div class="phil-slot card-${c.grade}">` +
         `<div class="ps-grade">${GRADE_KO[c.grade]}</div>` +
         `<div class="ps-name">${c.card}</div>` +
@@ -805,8 +836,16 @@ function renderDogam() {
         `<div class="ps-mine">내 반박 — “${c.myInput}”</div>` +
         `</div>`;
     };
-    return `<div class="dogam-group dogam-group--rev">` +
-      `<h3>${name} · ${owned}/${args.length} <small class="dg-prog">골드 ${gold}/${args.length}</small></h3>` +
+    // 완성 보상 배너 / 다음 목표 넛지
+    const banner = allGold
+      ? `<div class="dg-master allgold">👑 완전 정복 · 모든 철학 골드!</div>`
+      : mastered
+        ? `<div class="dg-master">🏆 도감 완성 · ${name} 마스터<small>남은 목표: ${total - gold}장을 골드로 → 완전 정복</small></div>`
+        : `<div class="dg-nudge">다음 목표: <b>${total - owned}장</b> 더 모으면 도감 완성 🏆</div>`;
+    return `<div class="dogam-group dogam-group--rev${mastered ? " mastered" : ""}">` +
+      `<h3>${name} · ${owned}/${total} <small class="dg-prog">골드 ${gold}/${total}</small></h3>` +
+      `<div class="dg-bar"><div class="dg-bar-fill${allGold ? " gold" : ""}" style="width:${pct}%"></div></div>` +
+      banner +
       `<div class="phil-grid">` +
       [...ownedSlots, ...lockedSlots].map(slot).join("") +
       `</div></div>`;
