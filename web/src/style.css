@@ -247,9 +247,15 @@ button, select, input { font-family: inherit; }
 .axis-chip.on { background: var(--seal); color: #fff; border-color: var(--seal); }
 
 .turn-form { display: flex; gap: 8px; padding: 10px 18px; margin: 0 auto; width: 100%; max-width: 760px; background: linear-gradient(180deg, transparent, rgba(0,0,0,.06)); }
-.turn-form input { flex: 1; padding: 12px 15px; border: 1.5px solid rgba(0,0,0,.14); border-radius: 12px; font-size: .95rem; background: rgba(255,252,244,.96); }
+.turn-form input { flex: 1 1 auto; min-width: 0; padding: 12px 15px; border: 1.5px solid rgba(0,0,0,.14); border-radius: 12px; font-size: .95rem; background: rgba(255,252,244,.96); }
 .turn-form input:focus { outline: none; border-color: var(--gold); }
-.turn-form button { padding: 0 18px; border: none; border-radius: 12px; background: var(--seal); color: #fff; font-size: 1rem; cursor: pointer; }
+.turn-form button { flex-shrink: 0; display: flex; align-items: center; justify-content: center; padding: 0 16px; border: none; border-radius: 12px; background: var(--seal); color: #fff; font-size: 1rem; cursor: pointer; }
+.turn-form button .send-ic { width: 19px; height: 19px; fill: currentColor; display: block; }
+/* 전송 버튼: 배경 없이 빨간 종이비행기만 */
+.turn-form button[type="submit"] { background: transparent; color: var(--seal); padding: 0 8px; }
+.turn-form button[type="submit"] .send-ic { width: 26px; height: 26px; }
+.turn-form button[type="submit"]:hover { color: #8f2620; transform: translateX(1px); }
+.turn-form button[type="submit"]:disabled { opacity: .4; }
 .turn-form button:disabled { opacity: .5; cursor: wait; }
 .hint-btn {
   padding: 0 13px; border: 1.5px solid var(--gold); border-radius: 12px;
@@ -402,14 +408,24 @@ button, select, input { font-family: inherit; }
     width: 100%; height: 100%; max-width: none; max-height: none;
     object-fit: cover; object-position: top center; /* 화면 꽉 채우기(빈 공간 X) */
   }
-  /* 대화 UI는 인물 위 투명 오버레이 — 인물이 뒤로 비쳐 보임 */
-  .chat-main { width: 100%; height: 100%; z-index: 1; }
-  #log { flex: 1 1 auto; min-height: 0; justify-content: flex-end; } /* 아래부터 쌓임 */
-  #log .msg.npc { background: rgba(253,246,230,.95); backdrop-filter: blur(2px); }
-  #log .msg.me { backdrop-filter: blur(3px); }
-  /* 헤더=상단 그라디언트 오버레이 / 입력창=하단 반불투명 바 */
-  .chat-head { background: linear-gradient(180deg, rgba(28,22,12,.42), rgba(28,22,12,0)); }
-  #turn-form { background: rgba(236,226,201,.94); border-radius: 12px 12px 0 0; }
+  /* 인물을 쨍하게: 세계 배경 베일(::after) 제거 — 가독성은 하단 스크림이 담당 */
+  #scr-chat[data-theme]::after { display: none; }
+  #scr-chat[data-theme]::before { opacity: 1; filter: none; } /* 뒤 배경도 또렷(투명부에만 보임) */
+  /* 대화 UI = 인물 위 오버레이. 상단 1/3은 인물 선명, 하단 2/3에 반투명 스크림(대화창) */
+  .chat-main {
+    width: 100%; height: 100%; z-index: 1;
+    background: linear-gradient(180deg,
+      rgba(236,226,201,0)   0%,
+      rgba(236,226,201,0)   30%,
+      rgba(236,226,201,.5)  40%,
+      rgba(236,226,201,.82) 58%,
+      rgba(236,226,201,.9)  100%);
+  }
+  #log { flex: 1 1 auto; min-height: 0; justify-content: flex-end; } /* 하단 스크림 위로 쌓임 */
+  #log .msg.npc { background: rgba(253,246,230,.9); }
+  #turn-form { background: rgba(236,226,201,.6); }
+  /* 헤더=상단 옅은 그라디언트(인물 얼굴 위 이름/게이지 가독성) */
+  .chat-head { background: linear-gradient(180deg, rgba(28,22,12,.4), rgba(28,22,12,0)); }
 }
 
 /* ══════════ 데스크톱: 중앙 문서 프레임 ══════════ */
