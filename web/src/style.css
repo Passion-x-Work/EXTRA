@@ -31,12 +31,23 @@ button, select, input { font-family: inherit; }
 :focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 
 /* ══════════ 지도(고지도) ══════════ */
+/* 화면 전체가 낡은 지도 한 장 — 종이는 CSS, 대륙은 SVG 레이어 */
 #scr-map {
-  justify-content: center; align-items: center; gap: 14px; text-align: center;
+  justify-content: center; align-items: center; text-align: center;
+  padding: 0; overflow: hidden;
   background:
-    repeating-linear-gradient(0deg, transparent 0 47px, rgba(120,90,40,.045) 47px 48px),
-    repeating-linear-gradient(90deg, transparent 0 47px, rgba(120,90,40,.045) 47px 48px),
-    radial-gradient(120% 85% at 50% 22%, #efe6cf, #dfcfa9);
+    radial-gradient(80% 55% at 22% 18%, rgba(255,250,232,.55), transparent 60%),
+    radial-gradient(70% 50% at 82% 82%, rgba(120,88,38,.20), transparent 62%),
+    repeating-linear-gradient(0deg, transparent 0 47px, rgba(120,90,40,.05) 47px 48px),
+    repeating-linear-gradient(90deg, transparent 0 47px, rgba(120,90,40,.05) 47px 48px),
+    radial-gradient(120% 85% at 50% 30%, #f0e4c5, #ddc99c 62%, #c4ab78 100%);
+}
+/* 눌어붙은 가장자리 */
+#scr-map::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 4;
+  background:
+    radial-gradient(115% 82% at 50% 48%, transparent 58%, rgba(90,62,22,.30) 82%, rgba(56,38,14,.55) 100%);
+  mix-blend-mode: multiply;
 }
 .brand { position: relative; display: inline-flex; align-items: flex-start; gap: 8px; }
 .logo { font-family: var(--serif); font-weight: 800; font-size: 3.4rem; letter-spacing: 6px; color: var(--ink); }
@@ -47,28 +58,122 @@ button, select, input { font-family: inherit; }
 }
 .tagline { color: var(--ink-soft); font-size: .95rem; margin-bottom: 10px; }
 .tagline b { color: var(--seal); }
+/* ── 고지도 판 ─────────────────────────────────────────────
+   .wm-paper = 오리지널 SVG 세계지도(등장방형도법).
+   핀은 --x/--y(위경도 환산 퍼센트)로 배치되므로 지도가 늘어나도 위치가 어긋나지 않는다. */
+.worldmap {
+  position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%);
+  width: 100%; aspect-ratio: 1000 / 383.3; z-index: 1;
+}
+.wm-paper { display: block; width: 100%; height: 100%; opacity: .92; }
+.wm-pins { position: absolute; inset: 0; }
+
+/* 지도 위에 얹히는 제목 · 문구 · 하단 조작 */
+#scr-map .brand { position: absolute; top: 6.5%; left: 50%; transform: translateX(-50%); z-index: 3; }
+#scr-map .tagline {
+  position: absolute; top: 20%; left: 50%; transform: translateX(-50%); z-index: 3;
+  margin: 0; width: max-content; max-width: 92%;
+  text-shadow: 0 1px 0 rgba(255,248,230,.75);
+}
+#scr-map .logo { text-shadow: 0 2px 10px rgba(255,248,230,.9), 0 1px 0 rgba(255,248,230,.9); }
+#scr-map .map-foot { position: absolute; bottom: 5%; left: 50%; transform: translateX(-50%); z-index: 3; }
+
+.pin {
+  position: absolute; left: var(--x); top: var(--y);
+  width: 0; height: 0; padding: 0; margin: 0; border: none; background: none;
+  cursor: pointer; z-index: 2;
+}
+/* 핀 머리 — 실제 좌표 지점 */
+.pin-dot {
+  position: absolute; left: 0; top: 0; width: 12px; height: 12px; margin: -6px 0 0 -6px;
+  border-radius: 50%; background: var(--seal);
+  box-shadow: 0 0 0 3px rgba(168,50,42,.22), 0 1px 3px rgba(0,0,0,.4);
+  transition: transform .14s cubic-bezier(.3,1.4,.5,1), background .14s, box-shadow .18s;
+}
+.pin-dot::after { /* 퍼지는 신호 */
+  content: ""; position: absolute; inset: -4px; border-radius: 50%;
+  border: 1.5px solid var(--seal); opacity: .55; animation: pinPulse 2.4s ease-out infinite;
+}
+@keyframes pinPulse { 0% { transform: scale(.6); opacity: .6; } 70%,100% { transform: scale(1.9); opacity: 0; } }
+
+/* 라벨 카드 — 평소엔 숨고, 핀에 마우스를 올리면(또는 키보드 포커스) 펼쳐진다 */
+.pin-card {
+  position: absolute; width: max-content; max-width: 160px;
+  display: flex; flex-direction: column; gap: 1px; text-align: left;
+  padding: 7px 10px; border-radius: 9px; border: 1.2px solid var(--gold);
+  background: rgba(255,251,238,.97); box-shadow: 0 6px 18px rgba(70,48,16,.4);
+  opacity: 0; visibility: hidden; pointer-events: none;
+  transform: translateY(4px) scale(.94); transform-origin: var(--org, bottom right);
+  transition: opacity .16s ease, transform .16s cubic-bezier(.3,1.3,.5,1), visibility .16s;
+}
+/* 방향: 오른쪽 끝 핀(한국·일본)은 왼쪽으로, 유럽 핀은 오른쪽으로 펼친다 */
+.pin--nw .pin-card { right: 13px; bottom: 9px; --org: bottom right; }  /* 세종: 좌·위 */
+.pin--sw .pin-card { right: 13px; top: 11px;  --org: top right; }      /* 미야모토: 좌·아래 */
+.pin--ne .pin-card { left: 13px;  bottom: 9px; --org: bottom left; }   /* 반고흐: 우·위 */
+/* 핀과 라벨을 잇는 실선 */
+.pin-card::after {
+  content: ""; position: absolute; width: 13px; height: 1.2px; background: var(--gold); opacity: .7;
+}
+.pin--nw .pin-card::after, .pin--sw .pin-card::after { right: -13px; }
+.pin--ne .pin-card::after { left: -13px; }
+.pin--nw .pin-card::after, .pin--ne .pin-card::after { bottom: 8px; }
+.pin--sw .pin-card::after { top: 10px; }
+
+.pin:hover, .pin:focus-visible { z-index: 5; }
+.pin:hover .pin-card,
+.pin:focus-visible .pin-card,
+.pin:focus-within .pin-card {
+  opacity: 1; visibility: visible; transform: translateY(0) scale(1);
+}
+/* 점 자체의 반응 */
+.pin:hover .pin-dot, .pin:focus-visible .pin-dot {
+  background: var(--gold); transform: scale(1.35);
+  box-shadow: 0 0 0 5px rgba(173,130,52,.28), 0 2px 6px rgba(0,0,0,.45);
+}
+.pin:focus-visible .pin-card { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+/* 터치 기기(호버 없음): 이름을 항상 작게 보여준다 */
+@media (hover: none) {
+  .pin-card {
+    opacity: 1; visibility: visible; transform: none;
+    max-width: 96px; padding: 4px 7px; box-shadow: 0 3px 9px rgba(70,48,16,.32);
+  }
+  .pin .relic-loc, .pin .relic-sub { display: none; }
+  .pin .relic-name { font-size: .68rem; }
+}
+
+/* 지도 위 라벨 글자 크기(공통 .relic-* 규칙을 덮어씀) */
+.pin .relic-loc { font-size: .58rem; letter-spacing: .5px; }
+.pin .relic-name { font-size: .92rem; line-height: 1.15; }
+.pin .relic-sub { font-size: .66rem; }
+.pin .relic-fresh { top: 2px; right: 4px; }
+
 .relics { display: flex; flex-direction: column; gap: 13px; width: 100%; align-items: center; }
-.relic {
+.relic:not(.pin) {
   position: relative; width: 100%; max-width: 340px; padding: 15px 18px 15px 20px;
   border: 1.5px solid var(--line); border-radius: 12px; background: #fff8ea; cursor: pointer;
   display: flex; flex-direction: column; gap: 2px; text-align: left;
   transition: transform .12s, box-shadow .2s, border-color .2s;
 }
-.relic::before { /* 지도 위치 표식 */
+.relic:not(.pin)::before { /* 지도 위치 표식 */
   content: ""; position: absolute; left: 9px; top: 50%; width: 7px; height: 7px; margin-top: -3px;
   border-radius: 50%; background: var(--seal); box-shadow: 0 0 0 3px rgba(168,50,42,.15);
 }
-.relic { padding-left: 26px; }
-.relic:hover:not(.disabled) { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(90,60,20,.22); border-color: var(--gold); }
+.relic:not(.pin) { padding-left: 26px; }
+.relic:not(.pin):hover:not(.disabled) { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(90,60,20,.22); border-color: var(--gold); }
 .relic-loc { font-size: .68rem; letter-spacing: 1px; color: var(--gold); text-transform: uppercase; }
 .relic-name { font-family: var(--serif); font-weight: 800; font-size: 1.15rem; color: var(--ink); }
 .relic-sub { font-size: .76rem; color: var(--ink-soft); }
 .relic.disabled { opacity: .4; cursor: not-allowed; }
-.relic.disabled::before { background: #9a8f76; box-shadow: none; }
+.relic:not(.pin).disabled::before { background: #9a8f76; box-shadow: none; }
 /* 이어하기 상태의 유적 */
-.relic--resume { border-color: var(--gold); background: #fdf3d8; }
-.relic--resume::before { background: var(--gold); box-shadow: 0 0 0 3px rgba(173,130,52,.2); }
+.relic--resume:not(.pin) { border-color: var(--gold); background: #fdf3d8; }
+.relic--resume:not(.pin)::before { background: var(--gold); box-shadow: 0 0 0 3px rgba(173,130,52,.2); }
 .relic--resume .relic-sub { color: #9a6a1a; font-weight: 700; }
+/* 지도 핀의 이어하기 표시 */
+.pin.relic--resume .pin-card { border-color: var(--gold); background: #fdf3d8; }
+.pin.relic--resume .pin-dot { background: var(--gold); box-shadow: 0 0 0 3px rgba(173,130,52,.25), 0 1px 3px rgba(0,0,0,.4); }
+.pin.relic--resume .pin-dot::after { border-color: var(--gold); }
 .relic-fresh {
   position: absolute; top: 8px; right: 10px; width: 24px; height: 24px; line-height: 22px;
   text-align: center; border-radius: 50%; font-size: 1rem; color: var(--ink-soft);
@@ -602,7 +707,7 @@ button, select, input { font-family: inherit; }
   .logo { font-size: 4.6rem; letter-spacing: 8px; }
   .tagline { font-size: 1.12rem; margin-bottom: 22px; }
   .relics { flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 20px; max-width: 900px; }
-  .relic { width: 262px; max-width: 262px; min-height: 128px; justify-content: center; }
+  .relic:not(.pin) { width: 262px; max-width: 262px; min-height: 128px; justify-content: center; }
   .relic-name { font-size: 1.28rem; }
   .msg { font-size: 1rem; max-width: 74%; }
 }

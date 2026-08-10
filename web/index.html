@@ -18,23 +18,38 @@
           <span class="brand-seal">端<br />役</span>
         </div>
         <p class="tagline">역사에 끼어든 <b>단역</b>이 되어, 실존 인물을 설득하라</p>
-        <div class="relics">
-          <button class="relic" data-char="sejong">
-            <span class="relic-loc">경복궁 · 조선</span>
-            <span class="relic-name">훈민정음</span>
-            <span class="relic-sub">세종대왕 · 완성</span>
-          </button>
-          <button class="relic" data-char="vangogh">
-            <span class="relic-loc">생레미 · 프랑스</span>
-            <span class="relic-name">별이 빛나는 밤</span>
-            <span class="relic-sub">반 고흐 · 맛보기</span>
-          </button>
-          <!-- 호쿠사이: 지도에서 숨김(파일·데이터 보존, 차기 공개용) -->
-          <button class="relic relic--bonus" data-char="miyamoto">
-            <span class="relic-loc">번외 · 게임의 전설</span>
-            <span class="relic-name">미야모토</span>
-            <span class="relic-sub">역설득 모드 · 플레이</span>
-          </button>
+        <!-- 고지도: 핀 좌표는 실제 위경도를 등장방형도법으로 환산한 값(--x/--y) -->
+        <div class="worldmap">
+          <img class="wm-paper" src="/Assets/world-map.svg" alt="세계 고지도" />
+          <div class="wm-pins">
+            <!-- 경복궁 서울 37.5796N 126.9770E -->
+            <button class="relic pin pin--nw" data-char="sejong" style="--x:85.271%; --y:32.189%">
+              <span class="pin-dot" aria-hidden="true"></span>
+              <span class="pin-card">
+                <span class="relic-loc">경복궁 · 조선</span>
+                <span class="relic-name">훈민정음</span>
+                <span class="relic-sub">세종대왕 · 완성</span>
+              </span>
+            </button>
+            <!-- 생레미드프로방스 43.7885N 4.8320E -->
+            <button class="relic pin pin--ne" data-char="vangogh" style="--x:51.342%; --y:27.689%">
+              <span class="pin-dot" aria-hidden="true"></span>
+              <span class="pin-card">
+                <span class="relic-loc">생레미 · 프랑스</span>
+                <span class="relic-name">별이 빛나는 밤</span>
+                <span class="relic-sub">반 고흐 · 맛보기</span>
+              </span>
+            </button>
+            <!-- 교토 35.0116N 135.7681E · 호쿠사이는 지도에서 숨김(데이터 보존) -->
+            <button class="relic relic--bonus pin pin--sw" data-char="miyamoto" style="--x:87.713%; --y:34.050%">
+              <span class="pin-dot" aria-hidden="true"></span>
+              <span class="pin-card">
+                <span class="relic-loc">번외 · 게임의 전설</span>
+                <span class="relic-name">미야모토</span>
+                <span class="relic-sub">역설득 모드 · 플레이</span>
+              </span>
+            </button>
+          </div>
         </div>
         <div class="map-foot">
           <div class="diff-select" id="diff-select">
