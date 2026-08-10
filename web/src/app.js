@@ -703,14 +703,25 @@ function endGame() {
 // ── 결과 클립: 인물별 클립 풀에서 랜덤 재생(webm 우선 + mp4 폴백) ──
 // 소리 포함. 결과 화면은 '결과 보기 ▶' 클릭 직후라 대부분 소리 재생 허용되지만,
 // 정책상 거부되면 음소거로 폴백해 영상은 항상 나오게 한다.
+// 난이도별 승리 클립. 값이 배열이면 그 안에서 랜덤, 문자열이면 단일 클립.
+//   세종·고흐: 난이도마다 다른 안무 1개씩
+//   미야모토: easy=쿠로다 part1~3 랜덤 / mid=하루 part1~3 랜덤 / hard=듀오(누끼 합동 댄스)
 const VICTORY_CLIPS = {
-  sejong: [1, 2, 3].map((n) => `/Assets/Sejong/victory/SJ-victory-clip${n}`), // .webm/.mp4 확장자는 <source>에서
-  vangogh: [1, 2, 3].map((n) => `/Assets/gogh/victory/GH-victory-clip${n}`),
-  // 미야모토(역모드) 승리: 하루/쿠로다 클립을 한 풀에 합쳐 랜덤
-  miyamoto: [
-    ...[1, 2, 3].map((n) => `/Assets/Reverse/victory/HR-victory-clip${n}`),
-    ...[1, 2, 3].map((n) => `/Assets/Reverse/victory/KR-victory-clip${n}`),
-  ],
+  sejong: {
+    easy: "/Assets/Sejong/victory/SJ-victory-easy",
+    mid:  "/Assets/Sejong/victory/SJ-victory-mid",
+    hard: "/Assets/Sejong/victory/SJ-victory-hard",
+  },
+  vangogh: {
+    easy: "/Assets/gogh/victory/GH-victory-easy",
+    mid:  "/Assets/gogh/victory/GH-victory-mid",
+    hard: "/Assets/gogh/victory/GH-victory-hard",
+  },
+  miyamoto: {
+    easy: [1, 2, 3].map((n) => `/Assets/Reverse/victory/KR-victory-part${n}`),
+    mid:  [1, 2, 3].map((n) => `/Assets/Reverse/victory/HR-victory-part${n}`),
+    hard: "/Assets/Reverse/victory/MYA-victory-duo",
+  },
 };
 // 역모드 패배: 나를 꺾은 화자가 킹받게 놀리는 클립(taunt 대사와 세트)
 const LOSE_CLIPS = {
@@ -729,7 +740,12 @@ function playResultClip(pool) {
   video.muted = false;
   video.play().catch(() => { video.muted = true; video.play().catch(() => {}); }); // 소리 거부 시 음소거 폴백
 }
-const showVictoryClip = () => playResultClip(VICTORY_CLIPS[charId]);
+// 난이도별 풀 해석: 배열이면 랜덤 픽, 문자열이면 단일. 해당 난이도 항목 없으면 숨김.
+function showVictoryClip() {
+  const byDiff = VICTORY_CLIPS[charId];
+  const entry = byDiff ? byDiff[difficulty] : null;
+  playResultClip(Array.isArray(entry) ? entry : entry ? [entry] : null);
+}
 // 역모드 패배 클립: 마지막 화자(나를 꺾은 쪽)의 kingbada. 없으면 숨김.
 const showRevLoseClip = () => playResultClip(LOSE_CLIPS[REV_SPEAKER_ID[rev?.speaker] || ""]);
 function hideVictoryClip() {
@@ -1360,13 +1376,24 @@ async function saveCard() {
 }
 
 // 유적 클릭: 역설득 인물(cards.json)이면 역모드, 아니면 정방향(저장 있으면 이어하기)
+// 터치 기기: 첫 탭 = 이름 카드 열기(pin--peek), 두 번째 탭 = 입장 (호버 프리뷰 대체)
+const isTouch = window.matchMedia("(hover: none)").matches;
 document.querySelectorAll(".relic[data-char]").forEach((b) =>
   b.addEventListener("click", () => {
     const id = b.dataset.char;
+    if (isTouch && b.classList.contains("pin") && !b.classList.contains("pin--peek")) {
+      document.querySelectorAll(".pin--peek").forEach((p) => p.classList.remove("pin--peek"));
+      b.classList.add("pin--peek"); // 첫 탭: 어떤 유적인지 확인만
+      return;
+    }
     if (isReverseChar(id)) startReverse(id); // 덱 선택 제거 — 바로 시작(카드는 대화 중 도감에서 꺼내 씀)
     else startGame(id, !!loadSaves()[id]);
   })
 );
+// 지도 빈 곳 탭 → 열려있던 이름 카드 닫기
+$("scr-map").addEventListener("click", (e) => {
+  if (isTouch && !e.target.closest(".pin")) document.querySelectorAll(".pin--peek").forEach((p) => p.classList.remove("pin--peek"));
+});
 // 폼 제출: 역모드 진행 중이면 역판정, 아니면 정방향
 $("turn-form").addEventListener("submit", (e) => { (rev && !rev.done) ? onReverseTurn(e) : onTurn(e); });
 $("hint-btn").addEventListener("click", () => unlockHint()); // 수동 힌트(예산 차감)
