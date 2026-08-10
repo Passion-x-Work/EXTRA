@@ -437,9 +437,9 @@ button, select, input { font-family: inherit; }
 .sc-tone-badge { position: absolute; top: 7px; left: 7px; z-index: 2; font-size: .64rem; font-weight: 800; color: #fff; padding: 2px 9px; border-radius: 999px; }
 .sc-front-foot { position: relative; z-index: 2; padding: 20px 10px 8px; background: linear-gradient(transparent, rgba(20,15,8,.85)); color: #fff; font-family: var(--serif); font-weight: 700; font-size: .82rem; line-height: 1.3; }
 .sc-front-foot small { display: block; font-family: var(--sans); font-weight: 500; font-size: .62rem; opacity: .82; margin-top: 3px; }
-.sc-back { transform: rotateY(180deg); background: #fdf6e6; padding: 11px 12px; display: flex; flex-direction: column; gap: 5px; }
+.sc-back { transform: rotateY(180deg); background: #fdf6e6; padding: 16px 14px; display: flex; flex-direction: column; justify-content: center; gap: 8px; }
 .sc-topic-b { font-family: var(--serif); font-weight: 800; font-size: .84rem; color: var(--ink); }
-.sc-content { font-size: .8rem; color: var(--ink-soft); line-height: 1.5; flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; -webkit-overflow-scrolling: touch; }
+.sc-content { font-size: .8rem; color: var(--ink-soft); line-height: 1.5; flex: 0 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; -webkit-overflow-scrolling: touch; }
 .sc-src { font-size: .62rem; color: #9a9078; }
 .saryo-card.tone-classic .sc-front { border-color: var(--gold); }
 .saryo-card.tone-classic .sc-tone-badge { background: var(--seal); }
