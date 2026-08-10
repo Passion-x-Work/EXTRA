@@ -423,7 +423,10 @@ button, select, input { font-family: inherit; }
 .saryo-thumb.tone-meme { border-color: #a94fb8; } .saryo-thumb.tone-meme .st-badge { background: #a94fb8; }
 
 /* 사료 확대 패널(모달) + 그 안의 큰 플립 카드 */
-.saryo-modal { position: absolute; inset: 0; z-index: 80; display: flex; align-items: center; justify-content: center; background: rgba(20,15,8,.74); backdrop-filter: blur(3px); animation: crIn .2s ease; overscroll-behavior: contain; }
+.saryo-modal { position: absolute; inset: 0; z-index: 80; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; background: rgba(20,15,8,.74); backdrop-filter: blur(3px); animation: crIn .2s ease; overscroll-behavior: contain; }
+.saryo-use { border: none; border-radius: 12px; padding: 12px 22px; background: var(--seal); color: #fff; font-family: var(--serif); font-weight: 800; font-size: .95rem; cursor: pointer; box-shadow: 0 6px 16px rgba(168,50,42,.45); }
+.ps-use { margin-top: 8px; width: 100%; border: none; border-radius: 8px; padding: 8px; background: #5a4b8a; color: #fff; font-size: .72rem; font-weight: 700; cursor: pointer; }
+.ps-use small { font-weight: 500; opacity: .85; }
 .saryo-modal-close { position: absolute; top: 14px; right: 16px; z-index: 2; width: 38px; height: 38px; border-radius: 50%; border: none; background: rgba(255,255,255,.92); color: var(--ink); font-size: 1.05rem; cursor: pointer; box-shadow: 0 3px 10px rgba(0,0,0,.3); }
 .saryo-card { perspective: 1100px; background: none; border: none; padding: 0; margin: 0; cursor: pointer; font: inherit; text-align: left; }
 .saryo-card.big { width: min(78%, 300px); aspect-ratio: 63 / 88; animation: saryoPop .3s cubic-bezier(.3,1.3,.5,1); }

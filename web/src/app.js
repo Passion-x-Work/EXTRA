@@ -27,8 +27,9 @@ const PARROT_ROLLBACK = 2;   // 사료 베끼기 감지 시 되돌릴 턴 수
 let rev = null;              // { cards, scenario, index, gauge, goal, done, log }
 const REV_START_DEFAULT = 20, REV_GOAL_DEFAULT = 80; // winCondition 없을 때 폴백
 const isReverseChar = (id) => !!chars[id]?.cards;    // cards.json 있으면 역설득 인물
-let deckSel = new Set(), deckCharId = null;          // 덱 편성 선택 상태
-const DECK_MAX = 3;                                  // 덱 최대 장수(적게 쓸수록 고등급)
+let deckSel = new Set(), deckCharId = null;          // 덱 편성 선택 상태(레거시)
+const DECK_MAX = 3;                                  // 덱 최대 장수(레거시)
+let dogamFrom = null;                                // "chat"이면 대화 중 도감 → 카드 '쓰기' 노출·복귀
 
 // ── 역모드 기록: 반박 세션 로그 + 철학 카드 컬렉션(localStorage) ──
 // REV_LOG: 최신 1판의 공방 전체(스펙 작업1 — 1차는 최신 1판만 유지).
@@ -414,7 +415,6 @@ const revSpeakerCls = (speaker) => REV_SPEAKER_ID[speaker] === "kuroda" ? "npc--
 function offerCard(argId) {
   const saved = loadRevDogam()[charId]?.[argId];
   if (!saved || !saved.myInput) return;
-  if (rev.deck && !rev.deck.has(argId)) return; // 덱 편성됨 → 덱에 넣은 카드만 꺼낼 수 있음
   const chip = document.createElement("button");
   chip.type = "button";
   chip.className = `card-use-chip card-${saved.grade || "silver"}`;
@@ -427,6 +427,17 @@ function offerCard(argId) {
   });
   $("log").appendChild(chip);
   $("log").scrollTop = $("log").scrollHeight;
+}
+
+// 대화 중 도감에서 카드 '쓰기' → 입력창에 채우고 대화로 복귀
+function useSaryoCard(content) { // 정방향: 사료 사실을 논거로
+  dogamFrom = null; show("scr-chat");
+  const inp = $("turn-input"); inp.value = content; inp.focus();
+}
+function useRebuttalCard(myInput) { // 역방향: 저장한 반박 꺼내 쓰기(감쇠 적용)
+  if (rev && !rev.done) rev.usingCard = true;
+  dogamFrom = null; show("scr-chat");
+  const inp = $("turn-input"); inp.value = myInput; inp.focus();
 }
 
 // 상황 내레이션(브릿지) — 화자/시간 전환을 자연스럽게 잇는 무대 지시문
@@ -857,11 +868,14 @@ function renderDogam() {
       // 미획득 티저: 정답(철학)은 감추되 '누가·어떤 종류'만 흘려 궁금증 유발
       if (!c) return `<div class="phil-slot locked"><div class="ps-name">🔒 ？？？</div><div class="ps-phil">${speakerName(a.speaker)}의 ${KIND_LABEL[a.kind] || "설득"}…</div></div>`;
       const cg = c.grade || "bronze"; // 옛 저장 데이터에 등급 없으면 브론즈로(‘undefined’ 표시 방지)
+      const useBtn = (dogamFrom === "chat" && rev && !rev.done && cid === charId)
+        ? `<button type="button" class="ps-use" data-usecid="${cid}" data-usearg="${a.id}">🃏 이 반박 꺼내 쓰기 <small>(감쇠 60%)</small></button>` : "";
       return `<div class="phil-slot card-${cg}">` +
         `<div class="ps-grade">${GRADE_KO[cg]}</div>` +
         `<div class="ps-name">${c.card}</div>` +
         `<div class="ps-phil">${(c.philosophy || "").split("—")[0].trim()}</div>` +
         `<div class="ps-mine">내 반박 — “${c.myInput}”</div>` +
+        useBtn +
         `</div>`;
     };
     // 완성 보상 배너 / 다음 목표 넛지
@@ -884,6 +898,13 @@ function renderDogam() {
   el.querySelectorAll(".saryo-thumb .st-img").forEach((img) => { img.onerror = () => { img.onerror = null; img.style.display = "none"; }; });
   el.querySelectorAll(".saryo-thumb").forEach((btn) =>
     btn.addEventListener("click", () => openSaryoCard(btn.dataset.cid, btn.dataset.frag, btn.dataset.tone)));
+  // 역모드 반박 카드 '꺼내 쓰기'(대화 중에만 노출)
+  el.querySelectorAll(".ps-use").forEach((btn) =>
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const saved = loadRevDogam()[btn.dataset.usecid]?.[btn.dataset.usearg];
+      if (saved?.myInput) useRebuttalCard(saved.myInput);
+    }));
 }
 
 // 사료 카드 확대 패널: 중앙에 크게 열리고, 카드를 누르면 뒤집혀 원문·출처가 보인다.
@@ -895,6 +916,8 @@ function openSaryoCard(cid, fragId, tone) {
   const img = series ? `/Assets/${a.dir}/${series}-Phase0${fragPhase(fragId)}.webp` : "";
   const src = (f.source || "").split("/")[0].slice(0, 80);
   const toneKo = tone === "meme" ? "밈" : "정통";
+  // 대화 중(이 인물의 정방향 게임 진행 중)이면 '이 사료로 논거 쓰기' 노출
+  const canUse = dogamFrom === "chat" && state && !rev && cid === charId;
   const ov = document.createElement("div");
   ov.className = "saryo-modal";
   ov.innerHTML =
@@ -911,8 +934,10 @@ function openSaryoCard(cid, fragId, tone) {
         `<div class="sc-content">${f.content}</div>` +
         `<div class="sc-src">${src}</div>` +
       `</div>` +
-    `</div></button>`;
+    `</div></button>` +
+    (canUse ? `<button type="button" class="saryo-use">📎 이 사료로 논거 쓰기</button>` : "");
   $("app").appendChild(ov);
+  if (canUse) ov.querySelector(".saryo-use").addEventListener("click", () => { ov.remove(); useSaryoCard(f.content); });
   const card = ov.querySelector(".saryo-card");
   const imgEl = card.querySelector(".sc-img");
   if (imgEl) imgEl.onerror = () => { imgEl.onerror = null; imgEl.style.display = "none"; };
@@ -1328,11 +1353,8 @@ async function saveCard() {
 document.querySelectorAll(".relic[data-char]").forEach((b) =>
   b.addEventListener("click", () => {
     const id = b.dataset.char;
-    if (isReverseChar(id)) {
-      // 모은 카드가 있으면 덱 편성 화면 → '출전' 후 시작. 없으면 바로 시작.
-      if (Object.keys(loadRevDogam()[id] || {}).length) openDeck(id);
-      else startReverse(id);
-    } else startGame(id, !!loadSaves()[id]);
+    if (isReverseChar(id)) startReverse(id); // 덱 선택 제거 — 바로 시작(카드는 대화 중 도감에서 꺼내 씀)
+    else startGame(id, !!loadSaves()[id]);
   })
 );
 // 폼 제출: 역모드 진행 중이면 역판정, 아니면 정방향
@@ -1341,7 +1363,7 @@ $("hint-btn").addEventListener("click", () => unlockHint()); // 수동 힌트(�
 $("save-card").addEventListener("click", saveCard);
 $("retry").addEventListener("click", () => { hideVictoryClip(); rev = null; refreshMapSaves(); show("scr-map"); });
 // 결과화면 → 도감 보기(닫으면 지도로)
-$("result-dogam").addEventListener("click", () => { hideVictoryClip(); renderDogam(); show("scr-dogam"); });
+$("result-dogam").addEventListener("click", () => { dogamFrom = null; hideVictoryClip(); renderDogam(); show("scr-dogam"); });
 // 뒤로가기: 진행 자동 저장 후 지도로 (역모드는 저장 없이 나감)
 $("back-map").addEventListener("click", () => { if (!rev) saveGame(); rev = null; refreshMapSaves(); show("scr-map"); });
 // 말투 슬라이딩 스위치(정통↔밈): 즉시 로그를 새 말투로 리렌더
@@ -1355,9 +1377,13 @@ $("tone-toggle").addEventListener("click", () => {
 document.querySelectorAll("#diff-select .diff").forEach((b) =>
   b.addEventListener("click", () => { difficulty = b.dataset.diff; syncDiffUI(); })
 );
-// 사료 도감
-$("open-dogam").addEventListener("click", () => { renderDogam(); show("scr-dogam"); });
-$("close-dogam").addEventListener("click", () => { refreshMapSaves(); show("scr-map"); });
+// 도감 — 지도/결과에서 열면 열람(dogamFrom=null), 대화 중 헤더 📖로 열면 '쓰기' 노출
+$("open-dogam").addEventListener("click", () => { dogamFrom = null; renderDogam(); show("scr-dogam"); });
+$("chat-dogam").addEventListener("click", () => { dogamFrom = "chat"; renderDogam(); show("scr-dogam"); });
+$("close-dogam").addEventListener("click", () => {
+  if (dogamFrom === "chat") { dogamFrom = null; show("scr-chat"); $("turn-input")?.focus(); } // 대화로 복귀
+  else { refreshMapSaves(); show("scr-map"); }
+});
 // 덱 편성: 출전(선택 카드로 시작) · 닫기(지도로)
 $("deck-go").addEventListener("click", () => startReverse(deckCharId, new Set(deckSel)));
 $("deck-close").addEventListener("click", () => show("scr-map"));
