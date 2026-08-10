@@ -1395,12 +1395,43 @@ $("scr-map").addEventListener("click", (e) => {
   if (isTouch && !e.target.closest(".pin")) document.querySelectorAll(".pin--peek").forEach((p) => p.classList.remove("pin--peek"));
 });
 
-// ── 지도 좌우 팬: 기본은 오른쪽 끝(대한민국이 잘 보이게), 드래그/스와이프로 미국 대륙까지 탐색 ──
+// ── 지구본 팬: 지도 3벌을 이어붙여 무한 순환(어느 방향으로 돌려도 계속 이어짐).
+//    기본 화면 = 한국이 정가운데. 드래그(마우스)/스와이프(터치)로 굴린다. ──
 const wmScroll = document.querySelector(".wm-scroll");
 if (wmScroll) {
-  const parkRight = () => { wmScroll.scrollLeft = wmScroll.scrollWidth; }; // 오른쪽 끝 = 한국·일본
-  requestAnimationFrame(parkRight);                      // 초기 진입
-  window.addEventListener("load", parkRight, { once: true }); // 지도 이미지 로드 후 확정
+  // 지도 복제 2벌 추가(원본 포함 총 3벌: [복제A][원본][복제B])
+  const original = wmScroll.querySelector(".worldmap");
+  if (original && !wmScroll.dataset.looped) {
+    wmScroll.dataset.looped = "1";
+    const cloneA = original.cloneNode(true), cloneB = original.cloneNode(true);
+    // 복제본 핀도 클릭 되도록 위임(아래 startGame 리스너는 원본에만 붙었으므로)
+    for (const c of [cloneA, cloneB]) c.querySelectorAll(".relic[data-char]").forEach((b) => b.addEventListener("click", () => {
+      const id = b.dataset.char;
+      if (isTouch && b.classList.contains("pin") && !b.classList.contains("pin--peek")) {
+        document.querySelectorAll(".pin--peek").forEach((p) => p.classList.remove("pin--peek"));
+        b.classList.add("pin--peek");
+        return;
+      }
+      if (isReverseChar(id)) startReverse(id);
+      else startGame(id, !!loadSaves()[id]);
+    }));
+    wmScroll.insertBefore(cloneA, original);
+    wmScroll.appendChild(cloneB);
+  }
+  const mapW = () => wmScroll.scrollWidth / 3; // 한 벌 너비
+  // 한국(핀 --x 85.27%)이 뷰포트 정가운데 오도록: 가운데 벌 기준
+  const parkKorea = () => {
+    const w = mapW();
+    wmScroll.scrollLeft = w + w * 0.8527 - wmScroll.clientWidth / 2;
+  };
+  requestAnimationFrame(parkKorea);
+  window.addEventListener("load", parkKorea, { once: true });
+  // 무한 랩: 가장자리 벌로 넘어가면 티 안 나게 가운데 벌로 점프
+  wmScroll.addEventListener("scroll", () => {
+    const w = mapW();
+    if (wmScroll.scrollLeft < w * 0.25) wmScroll.scrollLeft += w;
+    else if (wmScroll.scrollLeft > w * 1.75) wmScroll.scrollLeft -= w;
+  }, { passive: true });
   // 데스크톱 마우스 드래그 팬(터치는 네이티브 스크롤)
   let panning = false, panX = 0, panL = 0, moved = 0;
   wmScroll.addEventListener("pointerdown", (e) => {

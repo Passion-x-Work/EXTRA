@@ -61,9 +61,11 @@ button, select, input { font-family: inherit; }
 /* ── 고지도 판 ─────────────────────────────────────────────
    .wm-paper = 오리지널 SVG 세계지도(등장방형도법).
    핀은 --x/--y(위경도 환산 퍼센트)로 배치되므로 지도가 늘어나도 위치가 어긋나지 않는다. */
-/* 좌우 팬 뷰포트: 지도를 키워서(130%) 스크롤로 전체 탐색. 기본 위치는 오른쪽(한국) — JS에서 세팅 */
+/* 좌우 팬 뷰포트: 지도 3벌을 이어붙여 무한 순환(지구본처럼 계속 돈다).
+   기본 위치는 한국이 정가운데 — JS(무한 랩 + 드래그 팬)에서 세팅 */
 .wm-scroll {
   position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%);
+  display: flex; /* worldmap 3벌 가로 배치 */
   overflow-x: auto; overflow-y: hidden; z-index: 1;
   scrollbar-width: none; /* 지도 위 스크롤바 숨김(드래그/스와이프로 팬) */
   -webkit-overflow-scrolling: touch;
@@ -72,7 +74,7 @@ button, select, input { font-family: inherit; }
 .wm-scroll::-webkit-scrollbar { display: none; }
 .wm-scroll.grabbing { cursor: grabbing; }
 .worldmap {
-  position: relative;
+  position: relative; flex: 0 0 auto;
   width: 130%; min-width: 900px; aspect-ratio: 1000 / 383.3;
 }
 .wm-paper { display: block; width: 100%; height: 100%; opacity: .92; }
@@ -83,7 +85,10 @@ button, select, input { font-family: inherit; }
 #scr-map .tagline {
   position: absolute; top: 20%; left: 50%; transform: translateX(-50%); z-index: 3;
   margin: 0; width: max-content; max-width: 92%;
-  text-shadow: 0 1px 0 rgba(255,248,230,.75);
+  padding: 7px 18px; border-radius: 22px;
+  background: rgba(253,246,230,.82); border: 1px solid rgba(173,130,52,.35);
+  box-shadow: 0 3px 14px rgba(70,48,16,.22);
+  backdrop-filter: blur(2px);
 }
 #scr-map .logo { text-shadow: 0 2px 10px rgba(255,248,230,.9), 0 1px 0 rgba(255,248,230,.9); }
 #scr-map .map-foot { position: absolute; bottom: 5%; left: 50%; transform: translateX(-50%); z-index: 3; }
