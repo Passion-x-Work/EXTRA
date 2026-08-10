@@ -1398,9 +1398,23 @@ $("scr-map").addEventListener("click", (e) => {
 // ── 지도 좌우 팬: 기본은 오른쪽 끝(대한민국이 잘 보이게), 드래그/스와이프로 미국 대륙까지 탐색 ──
 const wmScroll = document.querySelector(".wm-scroll");
 if (wmScroll) {
-  const parkRight = () => { wmScroll.scrollLeft = wmScroll.scrollWidth; }; // 오른쪽 끝 = 한국·일본
-  requestAnimationFrame(parkRight);                      // 초기 진입
-  window.addEventListener("load", parkRight, { once: true }); // 지도 이미지 로드 후 확정
+  // 초기 위치: 유적 핀이 한 화면에 다 들어가면 핀 무리를 가운데로(좁은 폰에서 반 고흐가 잘리지 않게),
+  // 다 못 담으면 오른쪽 끝(한국·일본 우선)으로 붙인다.
+  const parkOnPins = () => {
+    const max = wmScroll.scrollWidth - wmScroll.clientWidth;
+    if (max <= 0) return;
+    const inner = wmScroll.querySelector(".worldmap");
+    const pins = [...wmScroll.querySelectorAll(".pin")];
+    const xs = pins.map((p) => (parseFloat(p.style.getPropertyValue("--x")) / 100) * inner.offsetWidth)
+                   .filter((n) => !Number.isNaN(n));
+    if (!xs.length) { wmScroll.scrollLeft = max; return; }
+    const lo = Math.min(...xs), hi = Math.max(...xs), pad = 16; // 화면 가장자리 여유
+    const fits = (hi - lo) + pad * 2 <= wmScroll.clientWidth;
+    const want = fits ? (lo + hi) / 2 - wmScroll.clientWidth / 2 : max;
+    wmScroll.scrollLeft = Math.max(0, Math.min(max, want));
+  };
+  requestAnimationFrame(parkOnPins);                      // 초기 진입
+  window.addEventListener("load", parkOnPins, { once: true }); // 지도 이미지 로드 후 확정
   // 데스크톱 마우스 드래그 팬(터치는 네이티브 스크롤)
   let panning = false, panX = 0, panL = 0, moved = 0;
   wmScroll.addEventListener("pointerdown", (e) => {
