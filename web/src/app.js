@@ -392,12 +392,17 @@ function revOpen(index) {
   rev.index = index;
   rev.attempt = 0;          // 새 논거 → 공방 카운트 리셋
   rev.speaker = t.speaker;  // 재설득 시 같은 화자로 이어가기
-  $("char-name").textContent = t.speaker;
-  $("char-diff").textContent = t.speakerRole || rev.scenario?.timeLabel || "";
-  if (t.bridge) addBridge(t.bridge); // 상황 전환 내레이션(같은 날 시간 경과·화자 교대)
-  addLine(`${t.speaker}: "${t.aiLine}"`, "npc " + revSpeakerCls(t.speaker)); // 화자별 말풍선 대비(S4)
-  revPortrait(t.speaker, "neutral");
-  renderRevGauge();
+  const showArg = () => {
+    $("char-name").textContent = t.speaker;
+    $("char-diff").textContent = t.speakerRole || rev.scenario?.timeLabel || "";
+    addLine(`${t.speaker}: "${t.aiLine}"`, "npc " + revSpeakerCls(t.speaker)); // 화자별 말풍선 대비(S4)
+    revPortrait(t.speaker, "neutral");
+    renderRevGauge();
+  };
+  // 화자/장면 전환(브릿지)은 검은 타이핑 오버레이로 — 읽고 탭하면 대사 시작(전환이 급하지 않게).
+  // 첫 논거(0)는 진입 인트로 직후라 브릿지를 인라인으로 처리.
+  if (t.bridge && index > 0) playIntro([t.bridge], showArg);
+  else { if (t.bridge) addBridge(t.bridge); showArg(); }
 }
 
 // 플레이어 반박 판정(프록시 → 실패 시 오프라인 폴백) + 멀티턴 흐름
@@ -459,7 +464,7 @@ async function onReverseTurn(e) {
   // strong: 논거 확실히 방어 → 다음 논거(마지막이면 종료)
   if (r.outcome === "strong") {
     if (lastArg) return revEnd(rev.gauge >= rev.goal);
-    return void setTimeout(() => revOpen(rev.index + 1), 800);
+    return void setTimeout(() => revOpen(rev.index + 1), 1600); // 응답 읽을 시간(전환 브릿지 뜨기 전)
   }
 
   // weak/comply인데 아직 공방 여유 있음 → 같은 화자가 이어간다
@@ -470,7 +475,7 @@ async function onReverseTurn(e) {
     return void setTimeout(() => {
       addLine(`${rt.speaker}: "${rt.line}"`, "npc " + revSpeakerCls(rt.speaker));
       revPortrait(rev.speaker, r.outcome === "comply" ? "smug" : "pressing");
-    }, 800);
+    }, 1200);
   }
 
   // 공방 소진 → 철학을 놓쳤음을 명시(어떤 카드를 잃었고, 게이지가 어떻게 됐는지)
@@ -479,7 +484,7 @@ async function onReverseTurn(e) {
 
   // 다음 논거(마지막이면 종료)
   if (lastArg) return revEnd(rev.gauge >= rev.goal);
-  setTimeout(() => revOpen(rev.index + 1), 1400);
+  setTimeout(() => revOpen(rev.index + 1), 1900);
 }
 
 function revEnd(win) {
