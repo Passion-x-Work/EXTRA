@@ -758,24 +758,34 @@ function renderDogam() {
   const rd = loadRevDogam();
   const el = $("dogam-list");
   const entries = Object.entries(d).filter(([, ids]) => ids && ids.length);
-  const revEntries = Object.entries(rd).filter(([, cards]) => cards && Object.keys(cards).length);
+  const revChars = Object.keys(chars).filter((id) => chars[id].cards);
+  const hasRev = revChars.some((cid) => Object.keys(rd[cid] || {}).length);
 
-  if (!entries.length && !revEntries.length) {
+  if (!entries.length && !hasRev) {
     el.innerHTML = `<p class="dogam-empty">아직 모은 카드가 없어요.<br />인물을 설득해 사료 카드를, 철학을 지켜 철학 카드를 모아보세요.</p>`;
     return;
   }
 
-  // 정방향: 사료 카드
-  let html = entries.map(([cid, ids]) => {
-    const ch = chars[cid]; if (!ch) return "";
-    const cards = ids.map((id) => ch.knowledge.fragments.find((f) => f.id === id)).filter(Boolean);
-    return `<div class="dogam-group"><h3>${ch.profile.displayName} · ${cards.length}장</h3>` +
-      cards.map((f) => `<div class="dogam-card"><div class="dc-topic">${f.topic}</div><div class="dc-content">${f.content}</div><div class="dc-src">${f.source.split("/")[0].slice(0, 46)}</div></div>`).join("") +
-      `</div>`;
-  }).join("");
+  // 상단 요약: 모은 총량 한눈에
+  const saryoCount = entries.reduce((n, [, ids]) => n + ids.length, 0);
+  const philOwned = revChars.reduce((n, cid) => n + Object.keys(rd[cid] || {}).length, 0);
+  const philTotal = revChars.reduce((n, cid) => n + (chars[cid].cards.arguments?.length || 0), 0);
+  let html = `<div class="dogam-summary"><span class="ds-chip">📜 사료 ${saryoCount}장</span><span class="ds-chip">🃏 철학 ${philOwned}/${philTotal}</span></div>`;
 
-  // 역모드: 철학 카드 — 전체 슬롯(획득/🔒미획득) + 등급 + 진척도("이 철학을 나는 이런 말로 지켜냈다")
-  const revChars = Object.keys(chars).filter((id) => chars[id].cards);
+  // 정방향: 사료 카드
+  if (entries.length) {
+    html += `<div class="dogam-section">📜 사료 카드</div>`;
+    html += entries.map(([cid, ids]) => {
+      const ch = chars[cid]; if (!ch) return "";
+      const cards = ids.map((id) => ch.knowledge.fragments.find((f) => f.id === id)).filter(Boolean);
+      return `<div class="dogam-group"><h3>${ch.profile.displayName} · ${cards.length}장</h3>` +
+        cards.map((f) => `<div class="dogam-card"><div class="dc-topic">${f.topic}</div><div class="dc-content">${f.content}</div><div class="dc-src">${f.source.split("/")[0].slice(0, 46)}</div></div>`).join("") +
+        `</div>`;
+    }).join("");
+  }
+
+  // 역모드: 철학 카드 — 획득한 것 먼저(등급 높은 순), 🔒 미획득은 뒤로
+  html += `<div class="dogam-section">🃏 철학 카드</div>`;
   html += revChars.map((cid) => {
     const data = chars[cid].cards;
     const name = data.figure?.displayName || cid;
@@ -783,19 +793,22 @@ function renderDogam() {
     const earned = rd[cid] || {};
     const owned = Object.keys(earned).length;
     const gold = Object.values(earned).filter((c) => c.grade === "gold").length;
+    const ownedSlots = args.filter((a) => earned[a.id]).sort((x, y) => (GRADE_RANK[earned[y.id].grade] || 0) - (GRADE_RANK[earned[x.id].grade] || 0));
+    const lockedSlots = args.filter((a) => !earned[a.id]);
+    const slot = (a) => {
+      const c = earned[a.id];
+      if (!c) return `<div class="phil-slot locked"><div class="ps-name">🔒 ？？？</div><div class="ps-phil">아직 못 지킨 철학</div></div>`;
+      return `<div class="phil-slot card-${c.grade}">` +
+        `<div class="ps-grade">${GRADE_KO[c.grade]}</div>` +
+        `<div class="ps-name">${c.card}</div>` +
+        `<div class="ps-phil">${(c.philosophy || "").split("—")[0].trim()}</div>` +
+        `<div class="ps-mine">내 반박 — “${c.myInput}”</div>` +
+        `</div>`;
+    };
     return `<div class="dogam-group dogam-group--rev">` +
-      `<h3>🃏 ${name} 철학 카드 · ${owned}/${args.length} <small class="dg-prog">골드 ${gold}/${args.length}</small></h3>` +
+      `<h3>${name} · ${owned}/${args.length} <small class="dg-prog">골드 ${gold}/${args.length}</small></h3>` +
       `<div class="phil-grid">` +
-      args.map((a) => {
-        const c = earned[a.id];
-        if (!c) return `<div class="phil-slot locked"><div class="ps-name">🔒 ？？？</div><div class="ps-phil">아직 못 지킨 철학</div></div>`;
-        return `<div class="phil-slot card-${c.grade}">` +
-          `<div class="ps-grade">${GRADE_KO[c.grade]}</div>` +
-          `<div class="ps-name">${c.card}</div>` +
-          `<div class="ps-phil">${(c.philosophy || "").split("—")[0].trim()}</div>` +
-          `<div class="ps-mine">내 반박 — “${c.myInput}”</div>` +
-          `</div>`;
-      }).join("") +
+      [...ownedSlots, ...lockedSlots].map(slot).join("") +
       `</div></div>`;
   }).join("");
 

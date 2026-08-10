@@ -406,6 +406,9 @@ button, select, input { font-family: inherit; }
 .dogam-head h2 { font-family: var(--serif); color: var(--ink); }
 .dogam-list { flex: 1; overflow-y: auto; padding-top: 14px; display: flex; flex-direction: column; gap: 16px; }
 .dogam-empty { text-align: center; color: var(--ink-soft); margin-top: 46px; line-height: 1.8; }
+.dogam-summary { display: flex; gap: 8px; flex-wrap: wrap; }
+.ds-chip { font-size: .78rem; font-weight: 700; color: var(--ink-soft); background: #fff3d8; border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px; }
+.dogam-section { font-family: var(--serif); font-weight: 800; font-size: .84rem; color: var(--gold); letter-spacing: 1.5px; margin-top: 6px; padding-bottom: 4px; border-bottom: 1px dashed var(--line); }
 .dogam-group h3 { font-family: var(--serif); font-size: 1rem; color: var(--seal); margin-bottom: 8px; }
 .dogam-card { background: #fdf6e6; border: 1px solid var(--line); border-left: 3px solid var(--gold); border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; }
 .dc-topic { font-family: var(--serif); font-weight: 700; font-size: .92rem; color: var(--ink); }
