@@ -408,6 +408,18 @@ button, select, input { font-family: inherit; }
 .card-toast.card-bronze { background: #b3855a; }
 .card-toast.card-silver { background: #8b96a3; }
 .card-toast.card-gold   { background: linear-gradient(90deg, #e6ad25, #c8901f); box-shadow: 0 0 14px rgba(217,160,33,.6); }
+/* 카드 사용(재사용) 칩 — 로그에 뜨는 '꺼내 쓰기' 버튼 */
+.card-use-chip {
+  align-self: center; margin: 4px 0; padding: 8px 16px; cursor: pointer;
+  border: 1.5px dashed var(--gold); border-radius: 999px; background: rgba(255,248,234,.94);
+  font-size: .82rem; color: var(--ink); font-family: var(--sans);
+  transition: transform .12s, box-shadow .2s;
+}
+.card-use-chip:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(90,60,20,.25); }
+.card-use-chip small { color: #9a6a1a; margin-left: 3px; }
+.card-use-chip.card-gold { border-color: #d9a021; }
+.card-use-chip.card-silver { border-color: #8b96a3; }
+.card-use-chip.card-bronze { border-color: #b3855a; }
 
 /* 결과화면: 철학 카드 + 내 반박 */
 .rev-won { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 3px; margin-top: 6px; }

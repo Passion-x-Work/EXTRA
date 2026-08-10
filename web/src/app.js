@@ -298,7 +298,7 @@ function startReverse(id) {
   rev = { cards: chars[id].cards, scenario: chars[id].scenario, index: 0,
         gauge: wc.startGauge ?? REV_START_DEFAULT, goal: wc.goalGauge ?? REV_GOAL_DEFAULT,
         maxRebuttals: wc.maxRebuttals ?? 2, attempt: 0, speaker: null, done: false,
-        log: [], cardsWon: [] };
+        log: [], cardsWon: [], usingCard: false, usedCards: 0 };
   state = null; snaps = [];
   $("log").innerHTML = "";
   $("scr-chat").dataset.theme = id;
@@ -360,6 +360,25 @@ function revPortrait(speaker, mood = "neutral") {
 // 화자별 말풍선 클래스(S4 캐릭터 대비: 하루=따뜻/열정, 쿠로다=차가움/데이터)
 const revSpeakerCls = (speaker) => REV_SPEAKER_ID[speaker] === "kuroda" ? "npc--kuroda" : "npc--haru";
 
+// 카드 사용 제안: 이 논거에 대해 이전에 모은 철학 카드가 있으면, 내 반박을 꺼내 쓸 수 있게 칩 노출.
+// 사용 시 저장된 반박이 자동입력되고(수정 가능), 제출하면 감쇠(60%) 적용 + '카드 의존' 기록.
+function offerCard(argId) {
+  const saved = loadRevDogam()[charId]?.[argId];
+  if (!saved || !saved.myInput) return;
+  const chip = document.createElement("button");
+  chip.type = "button";
+  chip.className = `card-use-chip card-${saved.grade || "silver"}`;
+  chip.innerHTML = `🃏 <b>${saved.card}</b> 꺼내 쓰기 <small>(감쇠 60%)</small>`;
+  chip.addEventListener("click", () => {
+    $("turn-input").value = saved.myInput;
+    rev.usingCard = true;
+    chip.remove();
+    $("turn-input").focus();
+  });
+  $("log").appendChild(chip);
+  $("log").scrollTop = $("log").scrollHeight;
+}
+
 // 상황 내레이션(브릿지) — 화자/시간 전환을 자연스럽게 잇는 무대 지시문
 function addBridge(text) {
   const div = document.createElement("div");
@@ -399,6 +418,7 @@ function revOpen(index) {
     addLine(`${t.speaker}: "${t.aiLine}"`, "npc " + revSpeakerCls(t.speaker)); // 화자별 말풍선 대비(S4)
     revPortrait(t.speaker, "neutral");
     renderRevGauge();
+    offerCard(t.argId); // 이전에 모은 카드가 있으면 '카드 사용' 제안
   };
   // 화자/장면 전환(브릿지)은 검은 타이핑 오버레이로 — 읽고 탭하면 대사 시작(전환이 급하지 않게).
   // 첫 논거(0)는 진입 인트로 직후라 브릿지를 인라인으로 처리.
@@ -412,7 +432,9 @@ async function onReverseTurn(e) {
   const input = $("turn-input").value.trim();
   if (!input || !rev || rev.done) return;
   $("turn-input").value = "";
-  addLine("나: " + input, "me");
+  const reused = !!rev.usingCard; rev.usingCard = false; // 카드 사용 여부(감쇠 적용)
+  const preGauge = rev.gauge;
+  addLine((reused ? "나 🃏: " : "나: ") + input, "me");
   const btn = $("turn-form").querySelector("button[type=submit]");
   btn.disabled = true;
 
@@ -432,13 +454,19 @@ async function onReverseTurn(e) {
   }
   btn.disabled = false;
 
+  // 카드 재사용 감쇠: 저장한 반박을 그대로 쓰면 리워드 60%만(균형 · 방어 성공 시).
+  if (reused && r.defended && r.delta > 0) {
+    r.delta = Math.round(r.delta * 0.6);
+    r.gauge = Math.max(0, Math.min(100, preGauge + r.delta));
+    rev.usedCards = (rev.usedCards || 0) + 1;
+  }
   rev.gauge = r.gauge;
   addLine(r.verdict.line, "npc");
-  const excellent = r.verdict.grade === "탁월";
-  const tagLabel = excellent               ? `[✨ 탁월 방어 +${r.delta} ✨]`
+  const excellent = r.verdict.grade === "탁월" && !reused; // 재사용은 탁월 연출 제외
+  const tagLabel = (excellent               ? `[✨ 탁월 방어 +${r.delta} ✨]`
                  : r.outcome === "strong"  ? `[방어 +${r.delta}]`
                  : r.outcome === "weak"    ? `[약한 방어 +${r.delta}]`
-                 : `[동조 ${r.delta}]`;
+                 : `[동조 ${r.delta}]`) + (reused ? " · 🃏카드(감쇠)" : "");
   addLine(tagLabel, "grade-tag" + (excellent ? " grade-tag--excellent" : ""));
   if (excellent) excellentBurst();
   revPortrait(rev.speaker, r.mood);   // 판정 mood로 표정 전환
@@ -450,7 +478,7 @@ async function onReverseTurn(e) {
   rev.log.push({ argId: curArg.id, speaker: rev.speaker, aiLine: curArg.aiLine,
                  myInput: input, outcome: r.outcome, grade: r.verdict.grade,
                  delta: r.delta, cardWon: r.cardWon || null });
-  if (r.cardWon) {
+  if (r.cardWon && !reused) { // 재사용은 이미 보유한 카드 → 재획득/승급 안 함
     rev.cardsWon.push({ argId: curArg.id, card: r.cardWon, myInput: input, grade });
     const res = addRevCard(curArg.id, r.cardWon, curArg.targetPhilosophy, input, rev.speaker, grade);
     // 획득/승급 연출
@@ -511,7 +539,7 @@ function revShowResult(win) {
     rl.classList.add("taunt");
   }
   $("result-turns").textContent = `${Math.min(rev.index + 1, rev.cards.arguments.length)}논거`;
-  $("result-grade").textContent = win ? "정복" : "—";
+  $("result-grade").textContent = win ? (rev.usedCards ? "정복 · 카드 의존" : "정복") : "—";
   $("result-cta").textContent = win ? (sc.winScene?.historicalNote || "") : (sc.loseScene?.encouragement || "");
 
   // 이번 판 획득 철학 카드 + 내 반박(작업2: "이 철학을, 나는 이런 말로 지켜냈다")
