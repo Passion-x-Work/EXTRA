@@ -61,7 +61,8 @@ button, select, input { font-family: inherit; }
 /* ── 고지도 판 ─────────────────────────────────────────────
    .wm-paper = 오리지널 SVG 세계지도(등장방형도법).
    핀은 --x/--y(위경도 환산 퍼센트)로 배치되므로 지도가 늘어나도 위치가 어긋나지 않는다. */
-/* 좌우 팬 뷰포트: 지도를 키워서(130%) 스크롤로 전체 탐색. 기본 위치는 오른쪽(한국) — JS에서 세팅 */
+/* 좌우 팬 뷰포트: 지도 3벌을 이어붙여 무한 순환(지구본처럼 계속 돈다).
+   기본 위치는 한국이 정가운데 — JS(무한 랩 + 드래그 팬)에서 세팅 */
 .wm-scroll {
   position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%);
   overflow-x: auto; overflow-y: hidden; z-index: 1;
@@ -84,7 +85,10 @@ button, select, input { font-family: inherit; }
 #scr-map .tagline {
   position: absolute; top: 20%; left: 50%; transform: translateX(-50%); z-index: 3;
   margin: 0; width: max-content; max-width: 92%;
-  text-shadow: 0 1px 0 rgba(255,248,230,.75);
+  padding: 7px 18px; border-radius: 22px;
+  background: rgba(253,246,230,.82); border: 1px solid rgba(173,130,52,.35);
+  box-shadow: 0 3px 14px rgba(70,48,16,.22);
+  backdrop-filter: blur(2px);
 }
 #scr-map .logo { text-shadow: 0 2px 10px rgba(255,248,230,.9), 0 1px 0 rgba(255,248,230,.9); }
 #scr-map .map-foot { position: absolute; bottom: 5%; left: 50%; transform: translateX(-50%); z-index: 3; }
@@ -528,6 +532,49 @@ button, select, input { font-family: inherit; }
   #result-card:has(.victory-clip:not([hidden])) .result-cards { grid-area: cards; justify-content: flex-start; margin-top: 8px; }
 }
 
+/* 대화 중 도감 버튼(🎴): 호버/포커스 시 '내 카드 사용하기' 라벨이 아래로 펼쳐짐 */
+.chat-dogam-btn { position: relative; }
+.chat-dogam-btn .cd-hint {
+  position: absolute; top: calc(100% + 7px); right: 0; z-index: 30;
+  width: max-content; padding: 5px 11px; border-radius: 8px;
+  background: var(--seal); color: #fff; font-size: .72rem; font-weight: 700;
+  box-shadow: 0 4px 14px rgba(120,30,20,.4);
+  opacity: 0; visibility: hidden; transform: translateY(-3px);
+  transition: opacity .16s, transform .16s, visibility .16s;
+  pointer-events: none;
+}
+.chat-dogam-btn .cd-hint::before { /* 말풍선 꼬리 */
+  content: ""; position: absolute; top: -4px; right: 12px;
+  border: 4px solid transparent; border-bottom-color: var(--seal); border-top: none;
+}
+.chat-dogam-btn:hover .cd-hint, .chat-dogam-btn:focus-visible .cd-hint {
+  opacity: 1; visibility: visible; transform: translateY(0);
+}
+/* 터치 기기: 항상 작게 노출(호버가 없으니 기능을 알 수 있게) */
+@media (hover: none) {
+  .chat-dogam-btn .cd-hint { opacity: 1; visibility: visible; transform: none; font-size: .6rem; padding: 3px 8px; }
+}
+
+/* 나의 논거 카드(정방향): "이 축을, 나는 이런 말로 뚫었다" */
+.dogam-group--myarg h3 { color: #2f6f9e; }
+.myarg-card {
+  background: #fdf6e6; border: 1.5px solid var(--line); border-left: 4px solid #2f6f9e;
+  border-radius: 10px; padding: 10px 13px; margin-bottom: 8px;
+}
+.myarg-card.grade-gold { border-left-color: #d9a021; box-shadow: 0 0 0 1px rgba(217,160,33,.35) inset; }
+.ma-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+.ma-axis { font-family: var(--serif); font-weight: 800; font-size: .88rem; color: var(--ink); }
+.ma-grade { font-size: .68rem; font-weight: 800; padding: 2px 8px; border-radius: 999px; background: #2f6f9e; color: #fff; }
+.myarg-card.grade-gold .ma-grade { background: #d9a021; }
+.ma-input { font-size: .82rem; color: #4a4132; font-style: italic; line-height: 1.55; }
+.ma-use {
+  margin-top: 8px; width: 100%; padding: 7px; border: 1.5px dashed #2f6f9e; border-radius: 8px;
+  background: rgba(47,111,158,.07); color: #2f6f9e; font-size: .78rem; font-weight: 700; cursor: pointer;
+}
+.ma-use:hover { background: rgba(47,111,158,.14); }
+/* 나의 논거 획득 토스트 */
+.card-toast.card-myarg { background: linear-gradient(90deg, #2f6f9e, #3d86bb); }
+
 /* 클리어 보상: 다음 난이도용 힌트 카드 */
 .rc-bonus {
   width: 100%; margin-top: 10px; padding: 10px 14px;
@@ -761,6 +808,29 @@ button, select, input { font-family: inherit; }
   .relic:not(.pin) { width: 262px; max-width: 262px; min-height: 128px; justify-content: center; }
   .relic-name { font-size: 1.28rem; }
   .msg { font-size: 1rem; max-width: 74%; }
+
+  /* 결과 카드(승리): 3열 배치 — 좌=역사 사료 · 중앙=영상+제목 · 우=내 논거·턴·등급.
+     보상 카드는 하단 전체 폭. 모바일은 기존 세로 스택 유지 */
+  #result-card {
+    max-width: 860px;
+    display: grid; align-items: center; column-gap: 26px;
+    grid-template-columns: 1fr minmax(230px, 300px) 1fr;
+    grid-template-areas:
+      "cta   clip  side"
+      "cta   title side"
+      "cards cards cards";
+  }
+  #result-card .victory-clip { grid-area: clip; width: 100%; margin: 0 auto 10px; }
+  #result-card .card-title { grid-area: title; margin: 0 0 6px; align-self: start; }
+  #result-card .card-cta {
+    grid-area: cta; align-self: center; text-align: left;
+    border-top: none; border-right: 1px dashed var(--line); padding: 8px 18px 8px 0;
+  }
+  #result-card .result-side { grid-area: side; align-self: center; }
+  #result-card .card-line { margin-bottom: 12px; }
+  #result-card .result-cards { grid-area: cards; margin-top: 16px; border-top: 1px dashed var(--line); padding-top: 14px; }
+  /* 영상 없이 이길 때(클립 hidden)나 패배 시엔 중앙 열이 비므로 제목이 위로 붙음 */
+  #result-card .victory-clip[hidden] { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

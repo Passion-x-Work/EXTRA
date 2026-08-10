@@ -81,7 +81,7 @@
                 <div class="who"><span id="char-name">세종대왕</span><small id="char-diff"></small></div>
               </div>
               <div class="head-ctl">
-                <button id="chat-dogam" class="ctl" title="도감 열기 (카드 쓰기)">📖</button>
+                <button id="chat-dogam" class="ctl chat-dogam-btn" title="내 카드 사용하기">🎴<span class="cd-hint">내 카드 사용하기</span></button>
                 <select id="provider" class="ctl" title="판정 엔진">
                   <option value="gpt">GPT</option>
                   <option value="claude">Claude</option>
@@ -116,8 +116,12 @@
             <video id="victory-video" playsinline autoplay loop></video>
           </div>
           <div id="result-title" class="card-title">설득 성공</div>
-          <div id="result-line" class="card-line"></div>
-          <div class="card-meta"><span id="result-turns"></span><span id="result-grade" class="grade"></span></div>
+          <!-- 우측(와이드): 나의 논거 + 턴 · 등급 -->
+          <div class="result-side">
+            <div id="result-line" class="card-line"></div>
+            <div class="card-meta"><span id="result-turns"></span><span id="result-grade" class="grade"></span></div>
+          </div>
+          <!-- 좌측(와이드): 역사 사료 노트 -->
           <div id="result-cta" class="card-cta"></div>
           <div id="result-cards" class="result-cards"></div>
         </div>

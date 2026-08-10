@@ -60,6 +60,27 @@ function simRatio(a, b) {
   return inter / (A.size + B.size - inter);
 }
 
+// ── 나의 논거 카드(정방향, localStorage) ──
+// 세종·고흐에서 좋은 등급(탁월/정합)을 받은 '내가 쓴 논거'를 가치 축별로 저장.
+// 같은 축은 더 높은 점수로만 갱신(best-argument). 카드로 꺼내 쓴 입력은 저장 안 함(복제 방지).
+const MYARG_KEY = "extra_myarg_v1";
+const loadMyArgs = () => { try { return JSON.parse(localStorage.getItem(MYARG_KEY)) || {}; } catch (_) { return {}; } };
+function addMyArgCard(cid, axis, input, grade) {
+  const pts = cfg.grade_to_points[grade] ?? 0;
+  if (pts < (cfg.grade_to_points["정합"] ?? 35)) return null; // 탁월/정합만 카드로
+  const d = loadMyArgs();
+  const mine = (d[cid] ??= {});
+  const cur = mine[axis];
+  let status = "keep";
+  if (!cur) status = "new";
+  else if ((cur.pts ?? 0) < pts) status = "upgrade";
+  if (status !== "keep") {
+    mine[axis] = { input, grade, pts, ts: Date.now() };
+    try { localStorage.setItem(MYARG_KEY, JSON.stringify(d)); } catch (_) {}
+  }
+  return status;
+}
+
 // 철학 카드 획득/성장 기록(인물별·논거별). 더 높은 등급 반박으로만 갱신(best-rebuttal).
 // 반환: { status: "new"|"upgrade"|"keep", grade, from? } → 획득/승급 연출용
 function addRevCard(argId, card, philosophy, myInput, speaker, grade = "silver") {
@@ -430,8 +451,10 @@ function offerCard(argId) {
 }
 
 // 대화 중 도감에서 카드 '쓰기' → 입력창에 채우고 대화로 복귀
+let pendingCardInput = false; // 이번 입력이 카드에서 꺼낸 것인지(결과 카드 대표 논거 선정에서 후순위 처리)
 function useSaryoCard(content) { // 정방향: 사료 사실을 논거로
   dogamFrom = null; show("scr-chat");
+  pendingCardInput = true;
   const inp = $("turn-input"); inp.value = content; inp.focus();
 }
 function useRebuttalCard(myInput) { // 역방향: 저장한 반박 꺼내 쓰기(감쇠 적용)
@@ -631,13 +654,30 @@ function revShowResult(win) {
 // 패배 놀림 대사 픽(배열에서 seed로 결정론적 선택)
 const pickTaunt = (arr, seed = 0) => (arr && arr.length) ? arr[Math.abs(seed) % arr.length] : null;
 
+// 결과 카드 대표 논거: 이번 판에서 '가장 높은 등급을 받은 나의 말'.
+// 단, 그 말이 도감 카드에서 꺼내 쓴 것(fromCard)이면 — 내 순수 논거 중
+// 다음(또는 동점) 높은 것을 우선한다. 순수 논거가 하나도 없으면 최고점 그대로.
+function bestArgument() {
+  const turns = (state.turnLog || []).filter((e) => e.type === "turn" && e.input);
+  if (!turns.length) return firstInputSaved;
+  const pts = (e) => cfg.grade_to_points[e.verdict?.grade] ?? -99;
+  const sorted = [...turns].sort((a, b) => pts(b) - pts(a)); // 안정 정렬 → 동점이면 먼저 말한 것
+  const top = sorted[0];
+  if (top.fromCard) {
+    const ownBest = sorted.find((e) => !e.fromCard);
+    if (ownBest) return ownBest.input;
+  }
+  return top.input;
+}
+
 function endGame() {
   const won = state.status === "WIN";
   const scn = chars[charId].scenario;
   $("result-title").textContent = won ? "설득 성공" : "다시 도전";
   const rl = $("result-line");
   if (won) {
-    rl.textContent = firstInputSaved ? `“${firstInputSaved}”` : "";
+    const best = bestArgument();
+    rl.textContent = best ? `“${best}”` : "";
     rl.classList.remove("taunt");
   } else {
     // 패배 = 인물이 의기양양하게 놀린다(킹받는 엔딩 → 복수심 재도전)
@@ -861,6 +901,25 @@ function renderDogam() {
     }).join("");
   }
 
+  // 정방향: 나의 논거 카드 — "이 축을, 나는 이런 말로 뚫었다" (탁월/정합 논거만, 축별 최고점)
+  const ma = loadMyArgs();
+  const maChars = Object.keys(ma).filter((cid) => chars[cid] && Object.keys(ma[cid]).length);
+  if (maChars.length) {
+    html += `<div class="dogam-section">💬 나의 논거 카드</div>`;
+    html += maChars.map((cid) => {
+      const name = chars[cid].profile?.displayName || cid;
+      const entries = Object.entries(ma[cid]).sort((a, b) => (b[1].pts ?? 0) - (a[1].pts ?? 0));
+      const canUse = dogamFrom === "chat" && state && !rev && cid === charId;
+      const rows = entries.map(([axis, c]) =>
+        `<div class="myarg-card grade-${c.grade === "탁월" ? "gold" : "silver"}">` +
+          `<div class="ma-head"><span class="ma-axis">✓ ${axis}</span><span class="ma-grade">${c.grade} +${c.pts}</span></div>` +
+          `<div class="ma-input">“${c.input}”</div>` +
+          (canUse ? `<button type="button" class="ma-use" data-macid="${cid}" data-maaxis="${axis}">💬 이 논거 꺼내 쓰기</button>` : "") +
+        `</div>`).join("");
+      return `<div class="dogam-group dogam-group--myarg"><h3>${name} · ${entries.length}장</h3>${rows}</div>`;
+    }).join("");
+  }
+
   // 역모드: 철학 카드 — 획득한 것 먼저(등급 높은 순), 🔒 미획득은 뒤로
   html += `<div class="dogam-section">🃏 철학 카드</div>`;
   const KIND_LABEL = { temptation: "달콤한 유혹", trap: "함정", bait: "가짜 명언" };
@@ -930,6 +989,13 @@ function renderDogam() {
       e.stopPropagation();
       const saved = loadRevDogam()[btn.dataset.usecid]?.[btn.dataset.usearg];
       if (saved?.myInput) useRebuttalCard(saved.myInput);
+    }));
+  // 나의 논거 카드 '꺼내 쓰기'(정방향 대화 중에만 노출)
+  el.querySelectorAll(".ma-use").forEach((btn) =>
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const saved = loadMyArgs()[btn.dataset.macid]?.[btn.dataset.maaxis];
+      if (saved?.input) useSaryoCard(saved.input); // 입력창에 채움 + fromCard 마킹(대표 논거 제외 규칙 공유)
     }));
 }
 
@@ -1109,8 +1175,16 @@ async function onTurn(e) {
   if (verdict.matchedIssue && (verdict.grade === "탁월" || verdict.grade === "정합"))
     state.coveredAxes.add(verdict.matchedIssue); // 새로 커버한 가치 축
 
-  state.turnLog.push({ type: "turn", input, verdict });
+  const wasFromCard = pendingCardInput;
+  state.turnLog.push({ type: "turn", input, verdict, fromCard: wasFromCard });
+  pendingCardInput = false;
   renderVerdict(verdict);
+  // 나의 논거 카드: 좋은 등급(탁월/정합)의 '순수 논거'만 저장(카드로 꺼낸 입력 제외)
+  if (!wasFromCard && verdict.matchedIssue) {
+    const st = addMyArgCard(charId, verdict.matchedIssue, input, verdict.grade);
+    if (st === "new") addLine(`💬 나의 논거 카드 획득 · ${verdict.grade}`, "grade-tag card-toast card-myarg");
+    else if (st === "upgrade") addLine(`⬆️ 나의 논거 카드 갱신 · ${verdict.grade}`, "grade-tag card-toast card-myarg");
+  }
   renderGauge();
   renderAxisTrack();
   updateScene();
@@ -1287,9 +1361,10 @@ function buildShareCard() {
   g.fillStyle = gold; g.font = "800 112px 'Nanum Myeongjo', serif"; g.textBaseline = "middle";
   g.fillText(grade, W / 2, 610); g.textBaseline = "top";
 
-  if (firstInputSaved) {
+  const bestArg = bestArgument(); // 공유 카드에도 최고 등급 논거 사용(카드 재사용 제외 규칙 동일)
+  if (bestArg) {
     g.fillStyle = "#4a4132"; g.font = "italic 34px 'Nanum Myeongjo', serif";
-    wrapText(g, `“${firstInputSaved}”`, W - 260).slice(0, 3).forEach((ln, i) => g.fillText(ln, W / 2, 780 + i * 50));
+    wrapText(g, `“${bestArg}”`, W - 260).slice(0, 3).forEach((ln, i) => g.fillText(ln, W / 2, 780 + i * 50));
   }
   g.fillStyle = "#7c7059"; g.font = "500 28px 'Noto Sans KR', sans-serif";
   g.fillText(`${state.turn}턴${won ? " · " + grade + "등급" : ""}`, W / 2, 970);
@@ -1404,7 +1479,8 @@ $("scr-map").addEventListener("click", (e) => {
   if (isTouch && !e.target.closest(".pin")) document.querySelectorAll(".pin--peek").forEach((p) => p.classList.remove("pin--peek"));
 });
 
-// ── 지도 좌우 팬: 기본은 오른쪽 끝(대한민국이 잘 보이게), 드래그/스와이프로 미국 대륙까지 탐색 ──
+// ── 지구본 팬: 지도 3벌을 이어붙여 무한 순환(어느 방향으로 돌려도 계속 이어짐).
+//    기본 화면 = 한국이 정가운데. 드래그(마우스)/스와이프(터치)로 굴린다. ──
 const wmScroll = document.querySelector(".wm-scroll");
 if (wmScroll) {
   // 지도 한 벌의 폭(사본 3벌이 나란히 있으므로 scrollLeft ± W 는 항상 같은 그림)
