@@ -60,6 +60,27 @@ function simRatio(a, b) {
   return inter / (A.size + B.size - inter);
 }
 
+// ── 나의 논거 카드(정방향, localStorage) ──
+// 세종·고흐에서 좋은 등급(탁월/정합)을 받은 '내가 쓴 논거'를 가치 축별로 저장.
+// 같은 축은 더 높은 점수로만 갱신(best-argument). 카드로 꺼내 쓴 입력은 저장 안 함(복제 방지).
+const MYARG_KEY = "extra_myarg_v1";
+const loadMyArgs = () => { try { return JSON.parse(localStorage.getItem(MYARG_KEY)) || {}; } catch (_) { return {}; } };
+function addMyArgCard(cid, axis, input, grade) {
+  const pts = cfg.grade_to_points[grade] ?? 0;
+  if (pts < (cfg.grade_to_points["정합"] ?? 35)) return null; // 탁월/정합만 카드로
+  const d = loadMyArgs();
+  const mine = (d[cid] ??= {});
+  const cur = mine[axis];
+  let status = "keep";
+  if (!cur) status = "new";
+  else if ((cur.pts ?? 0) < pts) status = "upgrade";
+  if (status !== "keep") {
+    mine[axis] = { input, grade, pts, ts: Date.now() };
+    try { localStorage.setItem(MYARG_KEY, JSON.stringify(d)); } catch (_) {}
+  }
+  return status;
+}
+
 // 철학 카드 획득/성장 기록(인물별·논거별). 더 높은 등급 반박으로만 갱신(best-rebuttal).
 // 반환: { status: "new"|"upgrade"|"keep", grade, from? } → 획득/승급 연출용
 function addRevCard(argId, card, philosophy, myInput, speaker, grade = "silver") {
@@ -880,6 +901,25 @@ function renderDogam() {
     }).join("");
   }
 
+  // 정방향: 나의 논거 카드 — "이 축을, 나는 이런 말로 뚫었다" (탁월/정합 논거만, 축별 최고점)
+  const ma = loadMyArgs();
+  const maChars = Object.keys(ma).filter((cid) => chars[cid] && Object.keys(ma[cid]).length);
+  if (maChars.length) {
+    html += `<div class="dogam-section">💬 나의 논거 카드</div>`;
+    html += maChars.map((cid) => {
+      const name = chars[cid].profile?.displayName || cid;
+      const entries = Object.entries(ma[cid]).sort((a, b) => (b[1].pts ?? 0) - (a[1].pts ?? 0));
+      const canUse = dogamFrom === "chat" && state && !rev && cid === charId;
+      const rows = entries.map(([axis, c]) =>
+        `<div class="myarg-card grade-${c.grade === "탁월" ? "gold" : "silver"}">` +
+          `<div class="ma-head"><span class="ma-axis">✓ ${axis}</span><span class="ma-grade">${c.grade} +${c.pts}</span></div>` +
+          `<div class="ma-input">“${c.input}”</div>` +
+          (canUse ? `<button type="button" class="ma-use" data-macid="${cid}" data-maaxis="${axis}">💬 이 논거 꺼내 쓰기</button>` : "") +
+        `</div>`).join("");
+      return `<div class="dogam-group dogam-group--myarg"><h3>${name} · ${entries.length}장</h3>${rows}</div>`;
+    }).join("");
+  }
+
   // 역모드: 철학 카드 — 획득한 것 먼저(등급 높은 순), 🔒 미획득은 뒤로
   html += `<div class="dogam-section">🃏 철학 카드</div>`;
   const KIND_LABEL = { temptation: "달콤한 유혹", trap: "함정", bait: "가짜 명언" };
@@ -949,6 +989,13 @@ function renderDogam() {
       e.stopPropagation();
       const saved = loadRevDogam()[btn.dataset.usecid]?.[btn.dataset.usearg];
       if (saved?.myInput) useRebuttalCard(saved.myInput);
+    }));
+  // 나의 논거 카드 '꺼내 쓰기'(정방향 대화 중에만 노출)
+  el.querySelectorAll(".ma-use").forEach((btn) =>
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const saved = loadMyArgs()[btn.dataset.macid]?.[btn.dataset.maaxis];
+      if (saved?.input) useSaryoCard(saved.input); // 입력창에 채움 + fromCard 마킹(대표 논거 제외 규칙 공유)
     }));
 }
 
@@ -1128,9 +1175,16 @@ async function onTurn(e) {
   if (verdict.matchedIssue && (verdict.grade === "탁월" || verdict.grade === "정합"))
     state.coveredAxes.add(verdict.matchedIssue); // 새로 커버한 가치 축
 
-  state.turnLog.push({ type: "turn", input, verdict, fromCard: pendingCardInput });
+  const wasFromCard = pendingCardInput;
+  state.turnLog.push({ type: "turn", input, verdict, fromCard: wasFromCard });
   pendingCardInput = false;
   renderVerdict(verdict);
+  // 나의 논거 카드: 좋은 등급(탁월/정합)의 '순수 논거'만 저장(카드로 꺼낸 입력 제외)
+  if (!wasFromCard && verdict.matchedIssue) {
+    const st = addMyArgCard(charId, verdict.matchedIssue, input, verdict.grade);
+    if (st === "new") addLine(`💬 나의 논거 카드 획득 · ${verdict.grade}`, "grade-tag card-toast card-myarg");
+    else if (st === "upgrade") addLine(`⬆️ 나의 논거 카드 갱신 · ${verdict.grade}`, "grade-tag card-toast card-myarg");
+  }
   renderGauge();
   renderAxisTrack();
   updateScene();

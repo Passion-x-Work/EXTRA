@@ -532,6 +532,49 @@ button, select, input { font-family: inherit; }
   #result-card:has(.victory-clip:not([hidden])) .result-cards { grid-area: cards; justify-content: flex-start; margin-top: 8px; }
 }
 
+/* 대화 중 도감 버튼(🎴): 호버/포커스 시 '내 카드 사용하기' 라벨이 아래로 펼쳐짐 */
+.chat-dogam-btn { position: relative; }
+.chat-dogam-btn .cd-hint {
+  position: absolute; top: calc(100% + 7px); right: 0; z-index: 30;
+  width: max-content; padding: 5px 11px; border-radius: 8px;
+  background: var(--seal); color: #fff; font-size: .72rem; font-weight: 700;
+  box-shadow: 0 4px 14px rgba(120,30,20,.4);
+  opacity: 0; visibility: hidden; transform: translateY(-3px);
+  transition: opacity .16s, transform .16s, visibility .16s;
+  pointer-events: none;
+}
+.chat-dogam-btn .cd-hint::before { /* 말풍선 꼬리 */
+  content: ""; position: absolute; top: -4px; right: 12px;
+  border: 4px solid transparent; border-bottom-color: var(--seal); border-top: none;
+}
+.chat-dogam-btn:hover .cd-hint, .chat-dogam-btn:focus-visible .cd-hint {
+  opacity: 1; visibility: visible; transform: translateY(0);
+}
+/* 터치 기기: 항상 작게 노출(호버가 없으니 기능을 알 수 있게) */
+@media (hover: none) {
+  .chat-dogam-btn .cd-hint { opacity: 1; visibility: visible; transform: none; font-size: .6rem; padding: 3px 8px; }
+}
+
+/* 나의 논거 카드(정방향): "이 축을, 나는 이런 말로 뚫었다" */
+.dogam-group--myarg h3 { color: #2f6f9e; }
+.myarg-card {
+  background: #fdf6e6; border: 1.5px solid var(--line); border-left: 4px solid #2f6f9e;
+  border-radius: 10px; padding: 10px 13px; margin-bottom: 8px;
+}
+.myarg-card.grade-gold { border-left-color: #d9a021; box-shadow: 0 0 0 1px rgba(217,160,33,.35) inset; }
+.ma-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+.ma-axis { font-family: var(--serif); font-weight: 800; font-size: .88rem; color: var(--ink); }
+.ma-grade { font-size: .68rem; font-weight: 800; padding: 2px 8px; border-radius: 999px; background: #2f6f9e; color: #fff; }
+.myarg-card.grade-gold .ma-grade { background: #d9a021; }
+.ma-input { font-size: .82rem; color: #4a4132; font-style: italic; line-height: 1.55; }
+.ma-use {
+  margin-top: 8px; width: 100%; padding: 7px; border: 1.5px dashed #2f6f9e; border-radius: 8px;
+  background: rgba(47,111,158,.07); color: #2f6f9e; font-size: .78rem; font-weight: 700; cursor: pointer;
+}
+.ma-use:hover { background: rgba(47,111,158,.14); }
+/* 나의 논거 획득 토스트 */
+.card-toast.card-myarg { background: linear-gradient(90deg, #2f6f9e, #3d86bb); }
+
 /* 클리어 보상: 다음 난이도용 힌트 카드 */
 .rc-bonus {
   width: 100%; margin-top: 10px; padding: 10px 14px;
