@@ -1375,6 +1375,15 @@ async function saveCard() {
   }, "image/png");
 }
 
+// 지도 무한 스크롤: 같은 지도를 3벌 이어붙인다(왼쪽 사본 · 원본 · 오른쪽 사본).
+// 사본도 핀을 그대로 가지므로, 아래 클릭 리스너 등록 '전에' 복제해야 사본 핀도 눌린다.
+const wmScrollEl = document.querySelector(".wm-scroll");
+const wmMain = wmScrollEl?.querySelector(".worldmap");
+if (wmScrollEl && wmMain) {
+  wmScrollEl.insertBefore(wmMain.cloneNode(true), wmMain); // 왼쪽 사본
+  wmScrollEl.appendChild(wmMain.cloneNode(true));          // 오른쪽 사본
+}
+
 // 유적 클릭: 역설득 인물(cards.json)이면 역모드, 아니면 정방향(저장 있으면 이어하기)
 // 터치 기기: 첫 탭 = 이름 카드 열기(pin--peek), 두 번째 탭 = 입장 (호버 프리뷰 대체)
 const isTouch = window.matchMedia("(hover: none)").matches;
@@ -1398,23 +1407,28 @@ $("scr-map").addEventListener("click", (e) => {
 // ── 지도 좌우 팬: 기본은 오른쪽 끝(대한민국이 잘 보이게), 드래그/스와이프로 미국 대륙까지 탐색 ──
 const wmScroll = document.querySelector(".wm-scroll");
 if (wmScroll) {
-  // 초기 위치: 유적 핀이 한 화면에 다 들어가면 핀 무리를 가운데로(좁은 폰에서 반 고흐가 잘리지 않게),
-  // 다 못 담으면 오른쪽 끝(한국·일본 우선)으로 붙인다.
-  const parkOnPins = () => {
-    const max = wmScroll.scrollWidth - wmScroll.clientWidth;
-    if (max <= 0) return;
-    const inner = wmScroll.querySelector(".worldmap");
-    const pins = [...wmScroll.querySelectorAll(".pin")];
-    const xs = pins.map((p) => (parseFloat(p.style.getPropertyValue("--x")) / 100) * inner.offsetWidth)
-                   .filter((n) => !Number.isNaN(n));
-    if (!xs.length) { wmScroll.scrollLeft = max; return; }
-    const lo = Math.min(...xs), hi = Math.max(...xs), pad = 16; // 화면 가장자리 여유
-    const fits = (hi - lo) + pad * 2 <= wmScroll.clientWidth;
-    const want = fits ? (lo + hi) / 2 - wmScroll.clientWidth / 2 : max;
-    wmScroll.scrollLeft = Math.max(0, Math.min(max, want));
+  // 지도 한 벌의 폭(사본 3벌이 나란히 있으므로 scrollLeft ± W 는 항상 같은 그림)
+  const mapW = () => wmScroll.querySelector(".worldmap")?.offsetWidth || 0;
+  // 무한 반복: 끝에 가까워지면 한 벌만큼 되감는다(같은 그림이라 이음매가 안 보인다)
+  let wrapping = false;
+  const wrapLoop = () => {
+    const W = mapW(); if (!W || wrapping) return;
+    const s = wmScroll.scrollLeft;
+    if (s < W * 0.5)      { wrapping = true; wmScroll.scrollLeft = s + W; wrapping = false; }
+    else if (s > W * 1.5) { wrapping = true; wmScroll.scrollLeft = s - W; wrapping = false; }
   };
-  requestAnimationFrame(parkOnPins);                      // 초기 진입
-  window.addEventListener("load", parkOnPins, { once: true }); // 지도 이미지 로드 후 확정
+  wmScroll.addEventListener("scroll", wrapLoop, { passive: true });
+
+  // 초기 시선: 훈민정음(세종) 핀을 화면 한가운데에 둔다.
+  const parkOnLead = () => {
+    const W = mapW(); if (!W) return;
+    const lead = wmScroll.querySelector('.pin[data-char="sejong"]');
+    const lx = lead ? (parseFloat(lead.style.getPropertyValue("--x")) / 100) * W : W * 0.85;
+    wmScroll.scrollLeft = W + lx - wmScroll.clientWidth / 2; // 가운데 사본 기준
+    wrapLoop();
+  };
+  requestAnimationFrame(parkOnLead);                      // 초기 진입
+  window.addEventListener("load", parkOnLead, { once: true }); // 지도 이미지 로드 후 확정
   // 데스크톱 마우스 드래그 팬(터치는 네이티브 스크롤)
   let panning = false, panX = 0, panL = 0, moved = 0;
   wmScroll.addEventListener("pointerdown", (e) => {

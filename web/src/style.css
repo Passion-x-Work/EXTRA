@@ -65,6 +65,7 @@ button, select, input { font-family: inherit; }
 .wm-scroll {
   position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%);
   overflow-x: auto; overflow-y: hidden; z-index: 1;
+  display: flex; align-items: flex-start; /* 지도 3벌을 가로로 이어붙임(무한 스크롤) */
   scrollbar-width: none; /* 지도 위 스크롤바 숨김(드래그/스와이프로 팬) */
   -webkit-overflow-scrolling: touch;
   cursor: grab;
@@ -72,7 +73,7 @@ button, select, input { font-family: inherit; }
 .wm-scroll::-webkit-scrollbar { display: none; }
 .wm-scroll.grabbing { cursor: grabbing; }
 .worldmap {
-  position: relative;
+  position: relative; flex: 0 0 auto; /* 사본끼리 줄어들지 않게 */
   width: 130%; min-width: 900px; aspect-ratio: 1000 / 383.3;
 }
 .wm-paper { display: block; width: 100%; height: 100%; opacity: .92; }
@@ -116,6 +117,24 @@ button, select, input { font-family: inherit; }
 .pin:hover .pin-dot, .pin:focus-visible .pin-dot, .pin.pin--peek .pin-dot { animation: none; }
 .pin-dot { will-change: transform; }
 @media (prefers-reduced-motion: reduce) { .pin-dot, .pin-dot::before, .pin-dot::after { animation: none; } }
+
+/* 대표 유적(훈민정음): 시선이 먼저 가도록 더 크고 세게 고동친다 + "여기서 시작" 안내 */
+.pin--lead .pin-dot {
+  width: 28px; height: 28px; margin: -14px 0 0 -14px;
+  box-shadow: 0 0 0 6px rgba(200,30,18,.30), 0 0 26px 9px rgba(255,70,45,.6), 0 2px 5px rgba(0,0,0,.55);
+  animation-duration: 1s;
+}
+.pin--lead .pin-dot::before, .pin--lead .pin-dot::after { inset: -8px; border-width: 3px; }
+.pin-start {
+  position: absolute; left: 0; top: 20px; transform: translateX(-50%);
+  white-space: nowrap; font-family: var(--serif); font-weight: 800; font-size: .72rem;
+  color: #fff5e2; background: rgba(168,50,42,.95); border: 1px solid #ffd9a0;
+  padding: 3px 10px; border-radius: 999px; box-shadow: 0 3px 10px rgba(0,0,0,.45);
+  animation: startBob 1.6s ease-in-out infinite; pointer-events: none;
+}
+@keyframes startBob { 0%,100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(3px); } }
+.pin--lead:hover .pin-start, .pin--lead.pin--peek .pin-start { opacity: 0; transition: opacity .15s; }
+@media (prefers-reduced-motion: reduce) { .pin-start { animation: none; } }
 
 /* 라벨 카드 — 평소엔 숨고, 핀에 마우스를 올리면(또는 키보드 포커스) 펼쳐진다 */
 .pin-card {
