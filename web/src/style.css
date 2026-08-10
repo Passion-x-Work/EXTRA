@@ -412,7 +412,7 @@ button, select, input { font-family: inherit; }
 .dogam-group h3 { font-family: var(--serif); font-size: 1rem; color: var(--seal); margin-bottom: 8px; }
 
 /* 사료 썸네일(작은 카드): 앞면=인물 이미지(획득 말투). 누르면 중앙 패널로 크게 열림 */
-.saryo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.saryo-grid { display: grid; grid-template-columns: repeat(auto-fill, 104px); gap: 10px; justify-content: center; }
 .saryo-thumb { position: relative; aspect-ratio: 63 / 88; border-radius: 9px; overflow: hidden; border: 1.5px solid var(--line); background: linear-gradient(160deg, #d9c9a0, #b89b63); cursor: pointer; padding: 0; margin: 0; display: flex; flex-direction: column; justify-content: flex-end; box-shadow: 0 3px 9px rgba(80,55,20,.18); font: inherit; text-align: left; transition: transform .12s, box-shadow .2s; }
 .saryo-thumb:hover { transform: translateY(-2px); box-shadow: 0 7px 16px rgba(80,55,20,.3); }
 .st-noimg { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: var(--serif); font-weight: 800; font-size: .78rem; color: rgba(60,45,20,.5); text-align: center; padding: 4px; }
@@ -457,7 +457,7 @@ button, select, input { font-family: inherit; }
 
 /* 철학 카드 컬렉션: 전체 슬롯(획득/잠김) + 등급 */
 .dg-prog { font-family: var(--sans); font-weight: 700; font-size: .72rem; color: #b58a1c; margin-left: 6px; }
-.phil-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.phil-grid { display: grid; grid-template-columns: repeat(auto-fill, 196px); gap: 8px; justify-content: center; }
 .phil-slot { border: 1.5px solid var(--line); border-radius: 10px; padding: 9px 11px; background: #fdf6e6; position: relative; }
 .phil-slot.locked { background: repeating-linear-gradient(135deg, #efe7d4 0 8px, #e9e0cb 8px 16px); border-style: dashed; color: #9a9078; text-align: center; display: flex; flex-direction: column; justify-content: center; gap: 3px; }
 .phil-slot .ps-grade { position: absolute; top: 7px; right: 9px; font-size: .62rem; font-weight: 800; letter-spacing: .5px; padding: 1px 6px; border-radius: 999px; color: #fff; }

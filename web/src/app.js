@@ -773,8 +773,9 @@ function renderDeck(id) {
   $("deck-grid").innerHTML = data.arguments.map((a) => {
     const c = earned[a.id];
     if (!c) return `<div class="phil-slot locked"><div class="ps-name">🔒 ？？？</div><div class="ps-phil">미획득</div></div>`;
-    return `<button type="button" class="phil-slot deck-slot card-${c.grade}" data-arg="${a.id}">` +
-      `<div class="ps-grade">${GRADE_KO[c.grade]}</div>` +
+    const cg = c.grade || "bronze";
+    return `<button type="button" class="phil-slot deck-slot card-${cg}" data-arg="${a.id}">` +
+      `<div class="ps-grade">${GRADE_KO[cg]}</div>` +
       `<div class="ps-name">${c.card}</div>` +
       `<div class="ps-mine">“${c.myInput.slice(0, 38)}${c.myInput.length > 38 ? "…" : ""}”</div>` +
       `</button>`;
@@ -855,8 +856,9 @@ function renderDogam() {
       const c = earned[a.id];
       // 미획득 티저: 정답(철학)은 감추되 '누가·어떤 종류'만 흘려 궁금증 유발
       if (!c) return `<div class="phil-slot locked"><div class="ps-name">🔒 ？？？</div><div class="ps-phil">${speakerName(a.speaker)}의 ${KIND_LABEL[a.kind] || "설득"}…</div></div>`;
-      return `<div class="phil-slot card-${c.grade}">` +
-        `<div class="ps-grade">${GRADE_KO[c.grade]}</div>` +
+      const cg = c.grade || "bronze"; // 옛 저장 데이터에 등급 없으면 브론즈로(‘undefined’ 표시 방지)
+      return `<div class="phil-slot card-${cg}">` +
+        `<div class="ps-grade">${GRADE_KO[cg]}</div>` +
         `<div class="ps-name">${c.card}</div>` +
         `<div class="ps-phil">${(c.philosophy || "").split("—")[0].trim()}</div>` +
         `<div class="ps-mine">내 반박 — “${c.myInput}”</div>` +
