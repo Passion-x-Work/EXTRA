@@ -1157,8 +1157,9 @@ function buildRevShareCard() {
     g.fillText("획득한 철학 카드가 없다", W / 2, y); y += 92;
   }
 
-  // 대표 반박: 첫 strong(가장 먼저 철학을 지켜낸 말)
-  const rep = rev.cardsWon[0]?.myInput || rev.log.find((l) => l.outcome === "strong")?.myInput;
+  // 대표 반박: 가장 높은 등급의 방어(동점이면 먼저 지켜낸 말). sort는 안정 정렬이라 동급은 원래 순서 유지.
+  const bestWon = rev.cardsWon.slice().sort((a, b) => (GRADE_RANK[b.grade] || 0) - (GRADE_RANK[a.grade] || 0))[0];
+  const rep = bestWon?.myInput || rev.log.find((l) => l.outcome === "strong")?.myInput;
   if (rep) {
     g.fillStyle = "#4a4132"; g.font = "italic 32px 'Nanum Myeongjo', serif";
     wrapText(g, `“${rep}”`, W - 280).slice(0, 3).forEach((ln, i) => g.fillText(ln, W / 2, y + 26 + i * 46));
