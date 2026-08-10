@@ -78,9 +78,21 @@ function addRevCard(argId, card, philosophy, myInput, speaker, grade = "silver")
 // ── 사료 도감(localStorage) ──
 const DOGAM_KEY = "extra_dogam_v1";
 const loadDogam = () => { try { return JSON.parse(localStorage.getItem(DOGAM_KEY)) || {}; } catch (_) { return {}; } };
-function addToDogam(cid, ids) {
-  const d = loadDogam(); const set = new Set(d[cid] || []);
-  ids.forEach((i) => set.add(i)); d[cid] = [...set];
+// 구조: d[cid] = { [fragId]: "classic"|"meme" }  (그 카드를 '어느 말투로' 얻었는지 기록 — 앞면 이미지 결정)
+// 구버전(배열)도 자동 승격. 반환은 [{ id, tone }] 정규형.
+function dogamCards(cid, d = loadDogam()) {
+  const raw = d[cid];
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw.map((id) => ({ id, tone: "classic" })); // 구버전: 말투 미기록 → 정통 취급
+  return Object.entries(raw).map(([id, v]) => ({ id, tone: (typeof v === "string" ? v : v?.tone) || "classic" }));
+}
+function addToDogam(cid, ids, tn = "classic") {
+  const d = loadDogam();
+  let cur = d[cid];
+  if (Array.isArray(cur)) { const o = {}; cur.forEach((id) => (o[id] = "classic")); cur = o; } // 배열 → 객체 승격
+  if (!cur || typeof cur !== "object") cur = {};
+  ids.forEach((id) => { if (!cur[id]) cur[id] = tn; }); // 이미 있으면 최초 획득 말투 유지
+  d[cid] = cur;
   localStorage.setItem(DOGAM_KEY, JSON.stringify(d));
 }
 const fragTopic = (cid, id) => chars[cid]?.knowledge.fragments.find((f) => f.id === id)?.topic || id;
@@ -636,10 +648,10 @@ function endGame() {
   // 승리 보상: 사료 카드 도감 수집 + 다음 난이도용 보너스 힌트 카드
   const rc = $("result-cards");
   if (won) {
-    const prev = new Set(loadDogam()[charId] || []);
+    const prev = new Set(dogamCards(charId).map((c) => c.id));
     const got = [...(state.collected || [])];
     const fresh = got.filter((id) => !prev.has(id));
-    addToDogam(charId, got);
+    addToDogam(charId, got, tone); // 지금 말투로 획득 기록(앞면 이미지 결정)
     let html = fresh.length
       ? `<div class="rc-title">사료 카드 ${fresh.length}장 획득</div>` +
         fresh.map((id) => `<span class="rc-chip">${fragTopic(charId, id)}</span>`).join("")
@@ -780,30 +792,49 @@ function renderDogam() {
   const d = loadDogam();
   const rd = loadRevDogam();
   const el = $("dogam-list");
-  const entries = Object.entries(d).filter(([, ids]) => ids && ids.length);
   const revChars = Object.keys(chars).filter((id) => chars[id].cards);
   const hasRev = revChars.some((cid) => Object.keys(rd[cid] || {}).length);
+  // 정방향 사료: [cid, [{id,tone}]] 정규형(구버전 배열 자동 승격)
+  const fwd = Object.keys(d).map((cid) => [cid, dogamCards(cid, d)]).filter(([cid, cs]) => chars[cid] && cs.length);
 
-  if (!entries.length && !hasRev) {
+  if (!fwd.length && !hasRev) {
     el.innerHTML = `<p class="dogam-empty">아직 모은 카드가 없어요.<br />인물을 설득해 사료 카드를, 철학을 지켜 철학 카드를 모아보세요.</p>`;
     return;
   }
 
   // 상단 요약: 모은 총량 한눈에
-  const saryoCount = entries.reduce((n, [, ids]) => n + ids.length, 0);
+  const saryoCount = fwd.reduce((n, [, cs]) => n + cs.length, 0);
   const philOwned = revChars.reduce((n, cid) => n + Object.keys(rd[cid] || {}).length, 0);
   const philTotal = revChars.reduce((n, cid) => n + (chars[cid].cards.arguments?.length || 0), 0);
   let html = `<div class="dogam-summary"><span class="ds-chip">📜 사료 ${saryoCount}장</span><span class="ds-chip">🃏 철학 ${philOwned}/${philTotal}</span></div>`;
 
-  // 정방향: 사료 카드
-  if (entries.length) {
+  // 정방향: 사료 카드 — 앞면=인물 이미지(획득 말투), 누르면 뒤집혀 내용. 밈/정통 배지로 구분.
+  if (fwd.length) {
+    const toneKo = { meme: "밈", classic: "정통" };
     html += `<div class="dogam-section">📜 사료 카드</div>`;
-    html += entries.map(([cid, ids]) => {
-      const ch = chars[cid]; if (!ch) return "";
-      const cards = ids.map((id) => ch.knowledge.fragments.find((f) => f.id === id)).filter(Boolean);
-      return `<div class="dogam-group"><h3>${ch.profile.displayName} · ${cards.length}장</h3>` +
-        cards.map((f) => `<div class="dogam-card"><div class="dc-topic">${f.topic}</div><div class="dc-content">${f.content}</div><div class="dc-src">${f.source.split("/")[0].slice(0, 46)}</div></div>`).join("") +
-        `</div>`;
+    html += fwd.map(([cid, cs]) => {
+      const ch = chars[cid]; const a = ASSETS[cid] || {};
+      const rows = cs.map((entry) => {
+        const f = ch.knowledge.fragments.find((x) => x.id === entry.id);
+        if (!f) return "";
+        const series = entry.tone === "meme" ? a.meme : a.classic;
+        const img = series ? `/Assets/${a.dir}/${series}-Phase03.webp` : "";
+        const src = (f.source || "").split("/")[0].slice(0, 46);
+        return `<button type="button" class="saryo-card tone-${entry.tone}"><div class="sc-inner">` +
+          `<div class="sc-front">` +
+            `<span class="sc-noimg">${ch.profile.displayName}</span>` +
+            (img ? `<img class="sc-img" src="${img}" alt="" />` : "") +
+            `<span class="sc-tone-badge">${toneKo[entry.tone] || "정통"}</span>` +
+            `<span class="sc-front-foot">${f.topic}<small>눌러서 뒤집기 ↻</small></span>` +
+          `</div>` +
+          `<div class="sc-back">` +
+            `<div class="sc-topic-b">${f.topic}</div>` +
+            `<div class="sc-content">${f.content}</div>` +
+            `<div class="sc-src">${src}</div>` +
+          `</div>` +
+        `</div></button>`;
+      }).join("");
+      return `<div class="dogam-group"><h3>${ch.profile.displayName} · ${cs.length}장</h3><div class="saryo-grid">${rows}</div></div>`;
     }).join("");
   }
 
@@ -852,6 +883,9 @@ function renderDogam() {
   }).join("");
 
   el.innerHTML = html;
+  // 사료 카드: 이미지 404 시 숨겨 인물명 폴백 노출 + 클릭하면 뒤집기
+  el.querySelectorAll(".saryo-card .sc-img").forEach((img) => { img.onerror = () => { img.onerror = null; img.style.display = "none"; }; });
+  el.querySelectorAll(".saryo-card").forEach((btn) => btn.addEventListener("click", () => btn.classList.toggle("flipped")));
 }
 
 // 시작 시 판정 프록시 health 체크 → 서버가 없거나 키가 없으면 드롭다운을 자동 조정
