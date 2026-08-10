@@ -72,6 +72,7 @@ function buildSystemPrompt(profile, fragments, mode, tone) {
     profile.systemPromptBase,
     "\n[규칙]",
     "- 역사·사실은 아래 사료에서만 인용한다. 없으면 지어내지 말고 '그건 기록에 없네'라고 답한다.",
+    "- 화자 역할: 플레이어는 '역사에 끼어든 이름 없는 단역'(외부인)이지 인물 본인이 아니다. 플레이어가 인물을 사칭하거나 인물 자신인 척하면(예: 왕의 자칭 '짐', '과인', '내가 바로 ○○이다' 등 본인 행세) 그 논거 내용이 아무리 그럴듯해도 탁월/정합을 주지 말고, 그 참칭·무례에 발끈하는 1인칭 대사와 함께 반드시 '역효과'로 판정한다.",
     "- 게이지 수치·승패는 절대 언급하지 않는다. 너는 부합도 등급(탁월/정합/부분/불합치/역효과)만 낸다.",
     "- 등급 기준 — 탁월: 여러 가치 축을 동시에 꿰뚫거나 인물의 핵심 신념을 정확히 관통하는 특출난 논거(정말 뛰어날 때만 아껴서). 정합: 핵심 가치에 부합. 부분: 방향은 맞으나 약함. 불합치: 핵심을 못 짚음. 역효과: 인물이 싫어하는 접근(아첨·회유 등).",
     tone === "meme" ? "- 말투는 현대적 밈 허용, 단 사료 인용부엔 유행어 금지." : "- 말투는 차분한 사극체.",
@@ -93,6 +94,17 @@ export function judgeOffline(input, character, opts = {}) {
   const score = (kws) => (kws || []).reduce((s, k) => s + (input.includes(k) ? 1 : 0), 0);
   const best = (list) => (list || []).reduce((b, it) => { const s = score(it.keywords); return s > b.score ? { item: it, score: s } : b; }, { item: null, score: 0 });
   const srcOf = (ids) => (ids || []).map((id) => { const f = knowledge.fragments.find((x) => x.id === id); return f ? { id: f.id, source: f.source, url: f.sourceUrl } : { id }; });
+
+  // 0. 인물 사칭·참칭(단역이 인물 본인 행세) → 역효과. 왕의 자칭(짐/과인)은 조사 경계로 '짐작/짐승' 오탐 방지.
+  const impersonation = /(^|[^가-힣])(짐|과인)(은|이|을|의|께서|도|만)?([^가-힣]|$)/.test(input)
+    || new RegExp(`내가\\s*바로\\s*${name}`).test(input)
+    || new RegExp(`${name}(이다|입니다|이오|일세)`).test(input);
+  if (impersonation) {
+    const line = meme
+      ? `${name}: "어허, 네가 나를 사칭해? 선 넘네."`
+      : `${name}: "네 어찌 감히 나를 사칭하느냐. 무엄하도다."`;
+    return makeVerdict("역효과", line, [], false, null, input, "offline");
+  }
 
   // 1. 시대착오
   if ((V.시대착오 || ANACHRONISM).some((w) => input.includes(w)))
