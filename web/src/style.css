@@ -262,9 +262,9 @@ button, select, input { font-family: inherit; }
 
 /* 종료 게이트: 마지막 대사 확인 후 '결과 보기 ▶' 클릭으로만 진행 */
 .end-gate {
-  align-self: center; position: relative; overflow: hidden; cursor: pointer;
+  align-self: center; position: sticky; bottom: 4px; z-index: 5; overflow: hidden; cursor: pointer;
   display: flex; flex-direction: column; align-items: center; gap: 3px;
-  margin: 6px 0 4px; padding: 12px 26px;
+  margin: 6px 0 4px; padding: 12px 26px; flex-shrink: 0;
   background: #fdf6e6; border: 1.5px solid var(--gold); border-radius: 13px;
   box-shadow: 0 6px 18px rgba(0,0,0,.22);
   animation: gatePulse 1.6s ease-in-out infinite;
