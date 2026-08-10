@@ -848,12 +848,16 @@ function renderDogam() {
   // 역모드: 철학 카드 — 획득한 것 먼저(등급 높은 순), 🔒 미획득은 뒤로
   html += `<div class="dogam-section">🃏 철학 카드</div>`;
   const KIND_LABEL = { temptation: "달콤한 유혹", trap: "함정", bait: "가짜 명언" };
+  // 타로풍 상징(철학별) + 로마숫자. 그림 없으면 이 엠블럼이 폴백.
+  const TAROT = { "arg-01": "☀", "arg-02": "🕹", "arg-03": "🏆", "arg-04": "🌙", "arg-05": "🌍" };
+  const ROMAN = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
   html += revChars.map((cid) => {
     const data = chars[cid].cards;
     const name = data.figure?.displayName || cid;
     const args = data.arguments || [];
     const personas = data.personas || [];
     const speakerName = (id) => personas.find((p) => p.id === id)?.name || "동료";
+    const numOf = {}; args.forEach((x, i) => (numOf[x.id] = ROMAN[i + 1] || ""));
     const earned = rd[cid] || {};
     const owned = Object.keys(earned).length;
     const total = args.length;
@@ -865,12 +869,18 @@ function renderDogam() {
     const lockedSlots = args.filter((a) => !earned[a.id]);
     const slot = (a) => {
       const c = earned[a.id];
-      // 미획득 티저: 정답(철학)은 감추되 '누가·어떤 종류'만 흘려 궁금증 유발
-      if (!c) return `<div class="phil-slot locked"><div class="ps-name">🔒 ？？？</div><div class="ps-phil">${speakerName(a.speaker)}의 ${KIND_LABEL[a.kind] || "설득"}…</div></div>`;
+      const emblem = TAROT[a.id] || "✦";
+      const num = numOf[a.id] || "";
+      // 미획득 티저: 뒤집힌 타로처럼(엠블럼 감춤) + '누가·어떤 종류'만 흘려 궁금증 유발
+      if (!c) return `<div class="phil-slot tarot locked">` +
+        `<div class="pt-art"><span class="pt-emblem">🔒</span><span class="pt-num">${num}</span></div>` +
+        `<div class="ps-name">？？？</div>` +
+        `<div class="ps-phil">${speakerName(a.speaker)}의 ${KIND_LABEL[a.kind] || "설득"}…</div></div>`;
       const cg = c.grade || "bronze"; // 옛 저장 데이터에 등급 없으면 브론즈로(‘undefined’ 표시 방지)
       const useBtn = (dogamFrom === "chat" && rev && !rev.done && cid === charId)
         ? `<button type="button" class="ps-use" data-usecid="${cid}" data-usearg="${a.id}">🃏 이 반박 꺼내 쓰기 <small>(감쇠 60%)</small></button>` : "";
-      return `<div class="phil-slot card-${cg}">` +
+      const art = `<div class="pt-art"><img class="pt-img" src="/Assets/Reverse/tarot/${a.id}.webp" alt="" /><span class="pt-emblem">${emblem}</span><span class="pt-num">${num}</span></div>`;
+      return `<div class="phil-slot tarot card-${cg}">` + art +
         `<div class="ps-grade">${GRADE_KO[cg]}</div>` +
         `<div class="ps-name">${c.card}</div>` +
         `<div class="ps-phil">${(c.philosophy || "").split("—")[0].trim()}</div>` +
@@ -895,7 +905,7 @@ function renderDogam() {
 
   el.innerHTML = html;
   // 사료 썸네일: 이미지 404 폴백 + 클릭하면 중앙 패널로 크게 열기
-  el.querySelectorAll(".saryo-thumb .st-img").forEach((img) => { img.onerror = () => { img.onerror = null; img.style.display = "none"; }; });
+  el.querySelectorAll(".saryo-thumb .st-img, .pt-img").forEach((img) => { img.onerror = () => { img.onerror = null; img.style.display = "none"; }; });
   el.querySelectorAll(".saryo-thumb").forEach((btn) =>
     btn.addEventListener("click", () => openSaryoCard(btn.dataset.cid, btn.dataset.frag, btn.dataset.tone)));
   // 역모드 반박 카드 '꺼내 쓰기'(대화 중에만 노출)
