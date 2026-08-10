@@ -191,6 +191,9 @@ const ASSETS = {
   hokusai: { dir: "Hokusai", bgDark: "Hokusai-BG02",    bgLight: "Hokusai-BG01", classic: "Hokusai", meme: "Hip-Hokusai" },
 };
 
+// 사료 카드 앞면 표정: 같은 인물이라도 카드마다 다른 Phase(1~5) — id 해시로 결정론적 분산
+const fragPhase = (id) => ([...String(id)].reduce((a, c) => a + c.charCodeAt(0), 0) % 5) + 1;
+
 // 배경(게이지 연동: ≤50 어두움 → >50 밝음) + 캐릭터(톤별 시리즈 × Phase별 표정)
 function updateScene() {
   const sc = $("scr-chat");
@@ -818,7 +821,7 @@ function renderDogam() {
         const f = ch.knowledge.fragments.find((x) => x.id === entry.id);
         if (!f) return "";
         const series = entry.tone === "meme" ? a.meme : a.classic;
-        const img = series ? `/Assets/${a.dir}/${series}-Phase03.webp` : "";
+        const img = series ? `/Assets/${a.dir}/${series}-Phase0${fragPhase(entry.id)}.webp` : "";
         return `<button type="button" class="saryo-thumb tone-${entry.tone}" data-cid="${cid}" data-frag="${entry.id}" data-tone="${entry.tone}">` +
           `<span class="st-noimg">${ch.profile.displayName}</span>` +
           (img ? `<img class="st-img" src="${img}" alt="" />` : "") +
@@ -887,7 +890,7 @@ function openSaryoCard(cid, fragId, tone) {
   const f = ch.knowledge.fragments.find((x) => x.id === fragId); if (!f) return;
   const a = ASSETS[cid] || {};
   const series = tone === "meme" ? a.meme : a.classic;
-  const img = series ? `/Assets/${a.dir}/${series}-Phase03.webp` : "";
+  const img = series ? `/Assets/${a.dir}/${series}-Phase0${fragPhase(fragId)}.webp` : "";
   const src = (f.source || "").split("/")[0].slice(0, 80);
   const toneKo = tone === "meme" ? "밈" : "정통";
   const ov = document.createElement("div");
@@ -912,7 +915,11 @@ function openSaryoCard(cid, fragId, tone) {
   const imgEl = card.querySelector(".sc-img");
   if (imgEl) imgEl.onerror = () => { imgEl.onerror = null; imgEl.style.display = "none"; };
   card.addEventListener("click", () => card.classList.toggle("flipped"));
-  const close = () => ov.remove();
+  // 배경(도감 목록) 스크롤 잠금 — 단, 뒷면 내용(.sc-content)은 스크롤 허용해 긴 원문도 다 읽게
+  const block = (e) => { if (!e.target.closest(".sc-content")) e.preventDefault(); };
+  ov.addEventListener("wheel", block, { passive: false });
+  ov.addEventListener("touchmove", block, { passive: false });
+  const close = () => ov.remove(); // 리스너는 ov 제거 시 함께 정리됨
   ov.querySelector(".saryo-modal-close").addEventListener("click", close);
   ov.addEventListener("click", (e) => { if (e.target === ov) close(); }); // 바깥(백드롭) 클릭 = 닫기
 }

@@ -423,7 +423,7 @@ button, select, input { font-family: inherit; }
 .saryo-thumb.tone-meme { border-color: #a94fb8; } .saryo-thumb.tone-meme .st-badge { background: #a94fb8; }
 
 /* 사료 확대 패널(모달) + 그 안의 큰 플립 카드 */
-.saryo-modal { position: absolute; inset: 0; z-index: 80; display: flex; align-items: center; justify-content: center; background: rgba(20,15,8,.74); backdrop-filter: blur(3px); animation: crIn .2s ease; }
+.saryo-modal { position: absolute; inset: 0; z-index: 80; display: flex; align-items: center; justify-content: center; background: rgba(20,15,8,.74); backdrop-filter: blur(3px); animation: crIn .2s ease; overscroll-behavior: contain; }
 .saryo-modal-close { position: absolute; top: 14px; right: 16px; z-index: 2; width: 38px; height: 38px; border-radius: 50%; border: none; background: rgba(255,255,255,.92); color: var(--ink); font-size: 1.05rem; cursor: pointer; box-shadow: 0 3px 10px rgba(0,0,0,.3); }
 .saryo-card { perspective: 1100px; background: none; border: none; padding: 0; margin: 0; cursor: pointer; font: inherit; text-align: left; }
 .saryo-card.big { width: min(78%, 300px); aspect-ratio: 63 / 88; animation: saryoPop .3s cubic-bezier(.3,1.3,.5,1); }
@@ -439,7 +439,7 @@ button, select, input { font-family: inherit; }
 .sc-front-foot small { display: block; font-family: var(--sans); font-weight: 500; font-size: .62rem; opacity: .82; margin-top: 3px; }
 .sc-back { transform: rotateY(180deg); background: #fdf6e6; padding: 11px 12px; display: flex; flex-direction: column; gap: 5px; }
 .sc-topic-b { font-family: var(--serif); font-weight: 800; font-size: .84rem; color: var(--ink); }
-.sc-content { font-size: .72rem; color: var(--ink-soft); line-height: 1.45; flex: 1; overflow: hidden; }
+.sc-content { font-size: .8rem; color: var(--ink-soft); line-height: 1.5; flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; -webkit-overflow-scrolling: touch; }
 .sc-src { font-size: .62rem; color: #9a9078; }
 .saryo-card.tone-classic .sc-front { border-color: var(--gold); }
 .saryo-card.tone-classic .sc-tone-badge { background: var(--seal); }
