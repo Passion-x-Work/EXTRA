@@ -274,11 +274,14 @@ function startGame(id, resume = false) {
   renderAxisTrack();
   renderHintBtn();
   updateScene();
-  if (resuming && state.turnLog.length) retone(); // 저장된 로그(오프닝+대화) 전체 재구성
-  else addLine(scenario.openingLines?.[tone] || scenario.openingLines?.classic || "…", "npc");
   snaps = [snapshot()]; // 시작(또는 복원) 스냅샷 = 되돌리기 하한
   show("scr-chat");
-  $("turn-input").focus();
+  if (resuming && state.turnLog.length) { retone(); $("turn-input").focus(); } // 이어하기: 로그 재구성(인트로 생략)
+  else {
+    const opening = scenario.openingLines?.[tone] || scenario.openingLines?.classic || "…";
+    // 새 게임: 상황설정 인트로 타이핑 → 끝나면 인물 첫 대사(intro 없으면 바로 대사)
+    playIntro(scenario.intro || [], () => { addLine(opening, "npc"); $("turn-input").focus(); });
+  }
 }
 
 // ══════════ 번외: 역설득 흐름 (AI가 먼저 논거 → 반박 → 판정 → 다음 논거) ══════════
@@ -302,17 +305,49 @@ function startReverse(id) {
   $("win-seal").classList.remove("stamped");
   $("axis-track").style.display = "none"; // 역모드엔 축 트랙 없음
   $("hint-btn").style.display = "none";   // MVP: 힌트 없음
-  $("turn-input").placeholder = "반박을 입력…";
+  $("turn-input").placeholder = "받아칠지, 수긍할지 입력…";
+  // 헤더를 첫 화자로 즉시 세팅(인트로 동안 이전 인물 이름이 남지 않게)
+  { const a0 = rev.cards.arguments[0]; const p0 = rev.cards.personas.find((x) => x.id === a0?.speaker);
+    $("char-name").textContent = p0?.name || rev.cards.figure?.displayName || "";
+    $("char-diff").textContent = p0?.role || rev.scenario?.timeLabel || ""; }
   $("turn-input").disabled = false;
   $("turn-form").querySelector("button[type=submit]").disabled = false;
   $("char-portrait").src = ""; // 이미지 대기(자동 숨김)
   updateScene();
   renderRevGauge();
-  // 도입부: 상황 설정 내레이션 전체(당신=거장, 회의 중, 두 동료 소개)
-  (rev.scenario?.intro || []).forEach((line) => addBridge(line));
   show("scr-chat");
-  revOpen(0);
-  $("turn-input").focus();
+  // 도입부: 검은 화면에 나레이션을 타이핑으로 쫘르륵 → 끝나면 사라지고 첫 논거 시작
+  playIntro(rev.scenario?.intro || [], () => { revOpen(0); $("turn-input").focus(); });
+}
+
+// 역모드 진입 인트로: 검은 화면 타이핑 연출. 다 나오면 자동으로(또는 탭하면 즉시) 사라지고 게임 시작.
+function playIntro(lines, onDone) {
+  if (!lines || !lines.length) { onDone && onDone(); return; }
+  const ov = document.createElement("div");
+  ov.className = "rev-intro";
+  ov.innerHTML = `<div class="ri-text"></div><div class="ri-skip">탭하여 건너뛰기</div>`;
+  $("scr-chat").appendChild(ov);
+  const textEl = ov.querySelector(".ri-text");
+  let li = 0, done = false, timer = null;
+  const finish = () => {
+    if (done) return; done = true; clearTimeout(timer);
+    ov.classList.add("out");
+    setTimeout(() => { ov.remove(); onDone && onDone(); }, 450);
+  };
+  const nextLine = () => {
+    if (li >= lines.length) { ov.querySelector(".ri-skip").textContent = "탭하여 시작 ▶"; timer = setTimeout(finish, 1500); return; }
+    const p = document.createElement("p"); p.className = "ri-line typing"; textEl.appendChild(p);
+    const line = lines[li++]; let ci = 0;
+    const type = () => {
+      p.textContent = line.slice(0, ++ci);
+      textEl.scrollTop = textEl.scrollHeight;
+      if (ci < line.length) timer = setTimeout(type, 26);
+      else { p.classList.remove("typing"); timer = setTimeout(nextLine, 520); }
+    };
+    type();
+  };
+  ov.addEventListener("click", finish); // 탭 = 건너뛰기(바로 시작)
+  nextLine();
 }
 
 // 역모드 화자 초상: Assets/Reverse/<speaker>-<tone>-<mood>.webp (파일 없으면 자동 숨김)
