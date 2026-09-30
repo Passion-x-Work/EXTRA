@@ -6,6 +6,8 @@ NHN AI 해커톤 · 팀 덕업일치(Passion x Work)
 > 🎮 **바로 플레이: https://extra-4ki9.onrender.com**
 > (무료 호스팅 특성상 첫 접속 시 로딩이 30초~1분 걸릴 수 있습니다)
 
+> 📌 **해커톤 출품 버전**은 Git 태그 `hackathon-submission` (커밋 `4191cb7`, 2026-08-13)을 참조하세요. 이후 커밋은 포스트-해커톤 개발이며 변경 내역은 [CHANGELOG.md](CHANGELOG.md)에 기록합니다.
+
 ## 소개
 
 검증된 사료로 구현된 실존 역사 인물(AI 에이전트)과 대화하며 설득하는 교육형 웹게임입니다.
