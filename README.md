@@ -1,5 +1,7 @@
 # EXTRA
 
+> **후속 개인 프로젝트 안내**: 해커톤 이후 개발은 [Jhun-bee/Extra](https://github.com/Jhun-bee/Extra)에서 이어갑니다. 해당 저장소는 비공개이며, 접근 권한이 있는 계정에서만 볼 수 있습니다. 이 저장소의 해커톤 출품 상태는 `hackathon-submission` 태그에 보존되어 있습니다.
+
 엑스트라(EXTRA) — 역사에 끼어든 단역이 되어 실존 인물을 설득하는 게임
 NHN AI 해커톤 · 팀 덕업일치(Passion x Work)
 
